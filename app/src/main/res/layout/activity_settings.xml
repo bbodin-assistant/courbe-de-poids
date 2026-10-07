@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="20dp">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Paramètres" android:textSize="28sp" android:textStyle="bold"/>
+<Switch android:id="@+id/reminder_enabled" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Activer le rappel quotidien"/>
+<TextView android:id="@+id/reminder_time" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="20sp" android:paddingTop="20dp" android:paddingBottom="20dp" android:clickable="true" android:focusable="true"/>
+</LinearLayout>
