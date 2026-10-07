@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:padding="24dp">
-
-    <Button
-        android:id="@+id/notify_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Générer une notification" />
-
-</LinearLayout>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Courbe de poids" android:textSize="28sp" android:textStyle="bold"/>
+<TextView android:id="@+id/today_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="12dp" android:textSize="16sp"/>
+<EditText android:id="@+id/weight_input" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Poids en kg" android:inputType="numberDecimal" android:imeOptions="actionDone"/>
+<Button android:id="@+id/save_today" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Enregistrer le poids du jour"/>
+<fr.bbodin.courbedepoids.WeightChartView android:id="@+id/weight_chart" android:layout_width="match_parent" android:layout_height="280dp" android:layout_marginTop="20dp"/>
+<Button android:id="@+id/add_past_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Ajouter une mesure passée"/>
+<Button android:id="@+id/history_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Historique"/>
+<Button android:id="@+id/settings_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Paramètres"/>
+</LinearLayout></ScrollView>
