@@ -2,64 +2,76 @@ package fr.bbodin.courbedepoids;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class MainActivity extends Activity {
-    private static final String CHANNEL_ID = "button_notifications";
     private static final int NOTIFICATION_PERMISSION_REQUEST = 1001;
+    private EditText weightInput;
+    private WeightDatabase db;
+    private WeightChartView chart;
+    private final String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        db = new WeightDatabase(this);
         createNotificationChannel();
-
-        Button button = findViewById(R.id.notify_button);
-        button.setOnClickListener(v -> showNotification());
         requestNotificationPermissionIfNeeded();
+
+        weightInput = findViewById(R.id.weight_input);
+        chart = findViewById(R.id.weight_chart);
+        findViewById(R.id.save_today).setOnClickListener(v -> saveToday());
+        findViewById(R.id.history_button).setOnClickListener(v -> startActivity(new Intent(this, HistoryActivity.class)));
+        findViewById(R.id.add_past_button).setOnClickListener(v -> startActivity(new Intent(this, AddMeasurementActivity.class)));
+        findViewById(R.id.settings_button).setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
+        refresh();
     }
 
+    @Override protected void onResume() { super.onResume(); if (db != null) refresh(); }
+
+    private void refresh() {
+        WeightDatabase.Measurement m = db.get(today);
+        weightInput.setText(m == null ? "" : format(m.weight));
+        chart.setData(db.all());
+        ((TextView)findViewById(R.id.today_status)).setText(
+                m == null ? "Aucune mesure enregistrée aujourd'hui." : "Mesure du jour : " + format(m.weight) + " kg");
+    }
+
+    private void saveToday() {
+        Double value = parse(weightInput.getText().toString());
+        if (value == null || value <= 0) { weightInput.setError("Entrez un poids valide."); return; }
+        db.save(today, value);
+        Toast.makeText(this, "Poids enregistré.", Toast.LENGTH_SHORT).show();
+        refresh();
+    }
+
+    private Double parse(String s) {
+        try { return Double.parseDouble(s.trim().replace(',', '.')); } catch (Exception e) { return null; }
+    }
+    private String format(double v) { return String.format(Locale.FRANCE, "%.1f", v); }
+
     private void requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_REQUEST);
-        }
     }
 
     private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Notifications du bouton",
-                    NotificationManager.IMPORTANCE_DEFAULT);
-            channel.setDescription("Notifications générées par le bouton de l'application");
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            manager.createNotificationChannel(channel);
+        if (Build.VERSION.SDK_INT >= 26) {
+            NotificationChannel c = new NotificationChannel(ReminderReceiver.CHANNEL_ID, "Rappel du poids", NotificationManager.IMPORTANCE_DEFAULT);
+            c.setDescription("Rappel quotidien pour enregistrer le poids");
+            getSystemService(NotificationManager.class).createNotificationChannel(c);
         }
-    }
-
-    private void showNotification() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "Autorisez les notifications pour continuer.", Toast.LENGTH_SHORT).show();
-            requestNotificationPermissionIfNeeded();
-            return;
-        }
-
-        NotificationManager manager = getSystemService(NotificationManager.class);
-        Notification notification = new Notification.Builder(this, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle("Courbe de poids")
-                .setContentText("Le bouton a été cliqué.")
-                .setAutoCancel(true)
-                .build();
-        manager.notify((int) System.currentTimeMillis(), notification);
     }
 }
