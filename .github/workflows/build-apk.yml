@@ -128,8 +128,12 @@ jobs:
             cat instrumentation.log
 
             crash_detected=0
-            grep -q "INSTRUMENTATION_RESULT: shortMsg=Process crashed." instrumentation.log && crash_detected=1
-            grep -q "INSTRUMENTATION_STATUS_CODE: -2" instrumentation.log && crash_detected=1
+            if grep -q "INSTRUMENTATION_RESULT: shortMsg=Process crashed." instrumentation.log; then
+              crash_detected=1
+            fi
+            if grep -q "INSTRUMENTATION_STATUS_CODE: -2" instrumentation.log; then
+              crash_detected=1
+            fi
             set -e
 
             case "$crash_detected:$instrument_exit" in
