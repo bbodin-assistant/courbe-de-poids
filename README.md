@@ -14,6 +14,8 @@ Format général : milestonecount.featurecount-patchcount.
 
 La version actuelle est 0.3.
 
+Build de référence CI : 0.3.
+
 Exemple de commit déclencheur :
 
     feat: finaliser la validation - version 0.3
