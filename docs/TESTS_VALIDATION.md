@@ -36,7 +36,7 @@ Fichier de référence : app/src/androidTest/java/fr/bbodin/courbedepoids/Accept
 6. L'émulateur installe exactement cet APK.
 7. L'APK de test d'instrumentation est construit puis les 15 scénarios sont exécutés contre l'application installée.
 
-GitHub Actions permet de transmettre un artefact entre jobs avec upload-artifact/download-artifact et de séquencer les jobs avec needs. Les artefacts v4 fournissent également une empreinte SHA-256 lors du transfert. citeturn2search0turn2search6
+GitHub Actions permet de transmettre un artefact entre jobs avec upload-artifact/download-artifact et de séquencer les jobs avec needs. Les artefacts v4 fournissent également une empreinte SHA-256 lors du transfert.
 
 ## Convention de version
 
