@@ -30,7 +30,6 @@ import android.widget.LinearLayout;
 import android.widget.TimePicker;
 
 import androidx.test.core.app.ActivityScenario;
-import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -51,10 +50,6 @@ import java.util.Locale;
 public class AcceptanceCriteriaInstrumentedTest {
     private static final String PACKAGE = "fr.bbodin.courbedepoids";
     private Context context;
-
-    @Rule
-    public ActivityScenarioRule<MainActivity> mainRule =
-            new ActivityScenarioRule<>(MainActivity.class);
 
     @Before
     public void resetState() {
@@ -93,10 +88,12 @@ public class AcceptanceCriteriaInstrumentedTest {
 
     @Test
     public void criterion01_enregistrerLePoidsDuJour() {
+        ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class);
         onView(withId(R.id.weight_input)).perform(replaceText("72,3"));
         onView(withId(R.id.save_today)).perform(click());
         onView(withId(R.id.today_status)).check(matches(withText("Mesure du jour : 72,3 kg")));
         assertNotNull(db().get(new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Calendar.getInstance().getTime())));
+        scenario.close();
     }
 
     @Test
@@ -174,7 +171,7 @@ public class AcceptanceCriteriaInstrumentedTest {
         db().save(dateOffset(-3), 70.0);
         db().save(dateOffset(-1), 72.0);
 
-        mainRule.getScenario().recreate();
+        ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class);
         onView(withId(R.id.weight_chart)).check(matches(isDisplayed()));
 
         final Object[] dataHolder = new Object[1];
@@ -190,6 +187,7 @@ public class AcceptanceCriteriaInstrumentedTest {
         });
         assertNotNull(dataHolder[0]);
         assertEquals(2, ((List<?>) dataHolder[0]).size());
+        scenario.close();
     }
 
     @Test
@@ -255,7 +253,8 @@ public class AcceptanceCriteriaInstrumentedTest {
 
     @Test
     public void criterion12_rappelFonctionneApplicationFermee() {
-        mainRule.getScenario().close();
+        ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class);
+        scenario.close();
         new ReminderReceiver().onReceive(context, new Intent(context, ReminderReceiver.class));
         NotificationManager nm = context.getSystemService(NotificationManager.class);
         assertTrue(nm.getActiveNotifications().length > 0);
@@ -265,7 +264,8 @@ public class AcceptanceCriteriaInstrumentedTest {
     public void criterion13_donneesConserveesApresFermeture() {
         String date = dateOffset(-1);
         db().save(date, 73.2);
-        mainRule.getScenario().close();
+        ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class);
+        scenario.close();
         ActivityScenario<MainActivity> reopened = ActivityScenario.launch(MainActivity.class);
         onView(withId(R.id.weight_chart)).check(matches(isDisplayed()));
         assertEquals(73.2, db().get(date).weight, 0.001);
