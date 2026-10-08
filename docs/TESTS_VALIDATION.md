@@ -4,7 +4,7 @@
 
 Les critères fonctionnels sont couverts par des scénarios Android instrumentés exécutés sur un émulateur API 35.
 
-Fichier de référence : app/src/androidTest/java/fr/bbodin/courbedepoids/AcceptanceCriteriaInstrumentedTest.java
+Fichier de référence : `app/src/androidTest/java/fr/bbodin/courbedepoids/AcceptanceCriteriaInstrumentedTest.java`
 
 ## Matrice de validation
 
@@ -19,45 +19,57 @@ Fichier de référence : app/src/androidTest/java/fr/bbodin/courbedepoids/Accept
 | 7 | criterion07_courbeRepresenteLesMesures | Courbe visible et deux mesures présentes dans son modèle |
 | 8 | criterion08_activerDesactiverRappel | Activation puis désactivation et contrôle des préférences |
 | 9 | criterion09_choisirHeureDuRappel | TimePicker, choix 07:35 et contrôle de configuration |
-| 10 | criterion10_rappelDeclencheUneNotification | Receiver et contrôle de notification publiée |
+| 10 | criterion10_rappelDeclencheUneNotification | Programmation du rappel et contrôle de la notification publiée |
 | 11 | criterion11_notificationOuvreApplication | PendingIntent puis contrôle de MainActivity |
-| 12 | criterion12_rappelFonctionneApplicationFermee | Activité fermée puis receiver hors UI |
+| 12 | criterion12_rappelFonctionneApplicationFermee | Activité fermée puis déclenchement du receiver hors UI |
 | 13 | criterion13_donneesConserveesApresFermeture | Fermeture puis nouvelle activité et lecture SQLite |
-| 14 | criterion14_donneesConserveesApresRedemarrageSimule | BOOT_COMPLETED instrumenté et contrôle données/configuration |
-| 15 | Workflow CI | Construction, publication, puis test de l'APK publié |
+| 14 | criterion14_donneesConserveesApresRedemarrageSimule | Broadcast BOOT_COMPLETED puis contrôle des données et préférences |
+| 15 | criterion15_lapplicationEstInstallableEtVersionnee | Application installée, package attendu et version non vide |
 
-## Ordre obligatoire CI
+## Ordre CI
 
-1. version-gate extrait une version du message du commit.
-2. Sans version, les jobs build et tests sont ignorés.
-3. build-apk construit l'APK avec cette version.
-4. L'APK est immédiatement publié comme artefact.
-5. instrumented-tests télécharge cet artefact.
-6. L'émulateur installe exactement cet APK.
-7. L'APK de test d'instrumentation est construit puis les 15 scénarios sont exécutés contre l'application installée.
+Le workflow `.github/workflows/build-apk.yml` s'exécute sur les pushes vers `main`.
 
-GitHub Actions permet de transmettre un artefact entre jobs avec upload-artifact/download-artifact et de séquencer les jobs avec needs. Les artefacts v4 fournissent également une empreinte SHA-256 lors du transfert.
+1. `version-gate` lit la version déclarée dans `app/build.gradle`.
+2. Cette version est comparée à celle du commit parent.
+3. Si la version n'a pas changé, les jobs de build et de test sont ignorés.
+4. Si la version a changé, `build-apk` construit l'APK debug avec cette version.
+5. L'APK est vérifié puis publié comme artefact.
+6. `instrumented-tests` télécharge exactement cet artefact.
+7. L'émulateur API 35 installe l'APK publié.
+8. L'APK des tests instrumentés est construit séparément.
+9. Le runner Android instrumenté exécute les 15 scénarios contre l'APK applicatif déjà installé.
+
+Le job de test ne lance donc pas `connectedDebugAndroidTest`, qui pourrait reconstruire l'APK applicatif. Il installe d'abord l'APK publié, puis construit uniquement l'APK de test.
 
 ## Convention de version
 
-Le numéro doit apparaître dans le message du commit.
+La version est déclarée dans `app/build.gradle` et suit la convention :
 
-Formats acceptés :
+```
+milestonecount.featurecount-patchcount
+```
 
-- 0.3
-- 0.3-1
-- 0.3-2
+Exemples :
 
-Format général : milestonecount.featurecount-patchcount.
+- `0.3`
+- `0.3-1`
+- `0.3-2`
 
-Pour l'état actuel, la version de référence est 0.3.
-
-Exemple : feat: finaliser la validation - version 0.3
-
-Un commit sans numéro de version ne déclenche ni construction ni test de l'APK. Le workflow peut être créé par le push, mais aucun runner de build ou de test n'est lancé.
+La valeur par défaut actuellement présente dans le dépôt est `0.3-2`. La CI ne dépend pas du message du commit : elle déclenche le build et les tests lorsque la version de `app/build.gradle` diffère de celle du commit parent.
 
 ## Identité de l'APK testé
 
-Le job de test ne lance pas connectedDebugAndroidTest, qui pourrait reconstruire l'APK applicatif. Il installe d'abord l'APK déjà publié, puis construit uniquement l'APK de test et lance le runner d'instrumentation.
+L'APK applicatif construit par `build-apk` est publié avec l'artefact :
 
-Ainsi, l'artefact livré et l'APK effectivement testé sont le même binaire.
+```
+courbe-de-poids-apk-<version>
+```
+
+Le job `instrumented-tests` télécharge cet artefact, vérifie sa version via `app-version.txt`, puis installe :
+
+```
+published-apk/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Ainsi, l'APK applicatif publié comme artefact est le même binaire que celui sur lequel les tests instrumentés sont exécutés.
