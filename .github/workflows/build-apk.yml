@@ -34,7 +34,7 @@ jobs:
               echo "Une nouvelle versionName doit avoir un versionCode strictement supérieur."
               exit 1
             fi
-          elif [ -n "$previous_name" ] && [ "$current_code" != "$previous_code" ]; then
+          elif [ -n "$previous_name" ] && [ -n "$previous_code" ] && [ "$current_code" != "$previous_code" ]; then
             echo "versionCode a changé sans changement de versionName."
             exit 1
           fi
