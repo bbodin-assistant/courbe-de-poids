@@ -283,7 +283,7 @@ public class AcceptanceCriteriaInstrumentedTest {
         context.getSharedPreferences("settings", Context.MODE_PRIVATE)
                 .edit().putBoolean("reminder_enabled", true).putInt("reminder_hour", 8).putInt("reminder_minute", 0).commit();
 
-        context.sendBroadcast(new Intent(Intent.ACTION_BOOT_COMPLETED));
+        new BootReceiver().onReceive(context, new Intent(Intent.ACTION_BOOT_COMPLETED));
         assertNotNull(db().get(date));
         assertTrue(context.getSharedPreferences("settings", Context.MODE_PRIVATE)
                 .getBoolean("reminder_enabled", false));
