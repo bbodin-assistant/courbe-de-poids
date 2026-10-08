@@ -125,26 +125,27 @@ jobs:
             set +e
             adb shell am instrument -w -r -e package fr.bbodin.courbedepoids fr.bbodin.courbedepoids.test/androidx.test.runner.AndroidJUnitRunner > instrumentation.log 2>&1
             instrument_exit=$?
-            set -e
             cat instrumentation.log
 
-            grep -q "INSTRUMENTATION_RESULT: shortMsg=Process crashed." instrumentation.log && {
-              echo "Instrumentation process crashed."
-              adb logcat -d -v threadtime > instrumentation-logcat.txt
-              exit 1
-            } || true
+            crash_detected=0
+            grep -q "INSTRUMENTATION_RESULT: shortMsg=Process crashed." instrumentation.log && crash_detected=1
+            grep -q "INSTRUMENTATION_STATUS_CODE: -2" instrumentation.log && crash_detected=1
+            set -e
 
-            grep -q "INSTRUMENTATION_STATUS_CODE: -2" instrumentation.log && {
-              echo "Instrumentation reported a process crash."
-              adb logcat -d -v threadtime > instrumentation-logcat.txt
-              exit 1
-            } || true
-
-            [ "$instrument_exit" -eq 0 ] || {
-              echo "Instrumentation command failed with exit code $instrument_exit."
-              adb logcat -d -v threadtime > instrumentation-logcat.txt
-              exit "$instrument_exit"
-            }
+            case "$crash_detected:$instrument_exit" in
+              1:*)
+                echo "Instrumentation process crashed."
+                adb logcat -d -v threadtime > instrumentation-logcat.txt
+                exit 1
+                ;;
+              0:0)
+                ;;
+              *)
+                echo "Instrumentation command failed with exit code $instrument_exit."
+                adb logcat -d -v threadtime > instrumentation-logcat.txt
+                exit "$instrument_exit"
+                ;;
+            esac
       - name: Upload instrumentation reports
         if: always()
         uses: actions/upload-artifact@v4
