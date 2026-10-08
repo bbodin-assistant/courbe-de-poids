@@ -8,42 +8,42 @@ permissions:
   contents: read
 
 jobs:
-  version-gate:
-    name: Check release version changed
+  version-validation:
+    name: Validate application version
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - name: Compare application version with previous commit
-        id: version
+      - name: Validate version format and release increment
         run: |
           set -euo pipefail
-          current="$(git show HEAD:app/build.gradle | grep -E "versionName" | grep -oE "[0-9]+.[0-9]+(-[0-9]+)?" | tail -n 1)"
-          previous="$(git show HEAD^:app/build.gradle 2>/dev/null | grep -E "versionName" | grep -oE "[0-9]+.[0-9]+(-[0-9]+)?" | tail -n 1 || true)"
-          if [ -z "$current" ]; then
-            echo "Impossible de déterminer la version courante dans app/build.gradle."
+          current_name="$(grep -E 'versionName' app/build.gradle | grep -oE '[0-9]+\\.[0-9]+(-[0-9]+)?' | tail -n 1)"
+          current_code="$(grep -E 'versionCode' app/build.gradle | grep -oE '[0-9]+' | head -n 1)"
+          test -n "$current_name"
+          test -n "$current_code"
+          printf '%s\n' "$current_name" | grep -qE '^[0-9]+\\.[0-9]+(-[0-9]+)?$'
+          test "$current_code" -ge 1
+          previous_name="$(git show HEAD^:app/build.gradle 2>/dev/null | grep -E 'versionName' | grep -oE '[0-9]+\\.[0-9]+(-[0-9]+)?' | tail -n 1 || true)"
+          previous_code="$(git show HEAD^:app/build.gradle 2>/dev/null | grep -E 'versionCode' | grep -oE '[0-9]+' | head -n 1 || true)"
+          echo "Version courante : $current_name (code $current_code)"
+          echo "Version précédente : $previous_name (code $previous_code)"
+          if [ -n "$previous_name" ] && [ "$current_name" != "$previous_name" ]; then
+            if [ -z "$previous_code" ] || [ "$current_code" -le "$previous_code" ]; then
+              echo "Une nouvelle versionName doit avoir un versionCode strictement supérieur."
+              exit 1
+            fi
+          elif [ -n "$previous_name" ] && [ "$current_code" != "$previous_code" ]; then
+            echo "versionCode a changé sans changement de versionName."
             exit 1
           fi
-          echo "Version courante : $current"
-          echo "Version précédente : ${previous:-<absente>}"
-          if [ "$current" = "$previous" ]; then
-            echo "La version n'a pas changé : build et tests ignorés."
-            exit 0
-          fi
-          echo "La version a changé : $previous -> $current"
-          echo "version=$current" >> "$GITHUB_OUTPUT"
 
   build-apk:
     name: Build and publish APK
-    needs: version-gate
-    if: ${{ needs.version-gate.outputs.version != '' }}
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ needs.version-gate.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -56,26 +56,34 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
+      - name: Read application version
+        id: version
+        run: |
+          set -euo pipefail
+          version="$(grep -E 'versionName' app/build.gradle | grep -oE '[0-9]+\\.[0-9]+(-[0-9]+)?' | tail -n 1)"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Build debug APK
         env:
-          VERSION_NAME: ${{ needs.version-gate.outputs.version }}
+          VERSION_NAME: ${{ steps.version.outputs.version }}
         run: gradle assembleDebug -PVERSION_NAME="$VERSION_NAME" --stacktrace
       - name: Build instrumented test APK
         env:
-          VERSION_NAME: ${{ needs.version-gate.outputs.version }}
+          VERSION_NAME: ${{ steps.version.outputs.version }}
         run: gradle assembleDebugAndroidTest -PVERSION_NAME="$VERSION_NAME" --stacktrace
       - name: Verify APK version
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
           test -n "$AAPT"
-          "$AAPT" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -F "versionName='${{ needs.version-gate.outputs.version }}'"
+          "$AAPT" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -F "versionName='${{ steps.version.outputs.version }}'"
       - name: Upload version metadata
-        run: echo "${{ needs.version-gate.outputs.version }}" > app-version.txt
+        run: echo "${{ steps.version.outputs.version }}" > app-version.txt
       - name: Publish APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: courbe-de-poids-apk-${{ needs.version-gate.outputs.version }}
+          name: courbe-de-poids-apk-${{ steps.version.outputs.version }}
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
