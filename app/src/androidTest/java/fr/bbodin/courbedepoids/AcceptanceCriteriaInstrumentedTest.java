@@ -298,6 +298,9 @@ public class AcceptanceCriteriaInstrumentedTest {
         android.content.pm.ApplicationInfo info = context.getApplicationInfo();
         assertNotNull(info);
         assertEquals(PACKAGE, context.getPackageName());
-        assertFalse(BuildConfig.VERSION_NAME.trim().isEmpty());
+        String versionName = context.getPackageManager()
+                .getPackageInfo(PACKAGE, 0).versionName;
+        assertNotNull(versionName);
+        assertFalse(versionName.trim().isEmpty());
     }
 }
