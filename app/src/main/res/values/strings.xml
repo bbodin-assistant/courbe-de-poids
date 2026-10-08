@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Courbe de poids</string>
+    <string name="splash_tagline">Suivez votre poids, atteignez vos objectifs !</string>
 </resources>
