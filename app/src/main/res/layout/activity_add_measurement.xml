@@ -1,8 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="20dp">
-<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/app_name" android:textSize="22sp" android:textStyle="bold" android:textColor="#0F172A"/>
-<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:text="Ajouter une mesure" android:textSize="26sp" android:textStyle="bold"/>
-<EditText android:id="@+id/date_input" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Date" android:focusable="false" android:clickable="true"/>
-<EditText android:id="@+id/weight_input" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Poids en kg" android:inputType="numberDecimal"/>
-<Button android:id="@+id/save_measurement" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Enregistrer"/>
-</LinearLayout>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:background="#F8FAFC">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+        android:paddingStart="24dp" android:paddingEnd="24dp" android:paddingTop="20dp" android:paddingBottom="28dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/app_name"
+            android:textSize="22sp" android:textStyle="bold" android:textColor="#0F172A"/>
+        <ImageView android:layout_width="match_parent" android:layout_height="130dp" android:layout_marginTop="12dp"
+            android:adjustViewBounds="true" android:contentDescription="Balance" android:src="@drawable/ic_scale"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp"
+            android:text="Ajouter une mesure" android:textSize="28sp" android:textStyle="bold" android:textColor="#0F172A"/>
+        <TextView android:id="@+id/date_label" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="22dp" android:text="Date de la mesure" android:textSize="14sp" android:textColor="#64748B"/>
+        <TextView android:id="@+id/date_input" android:layout_width="match_parent" android:layout_height="56dp"
+            android:layout_marginTop="6dp" android:background="#FFFFFF" android:gravity="center_vertical" android:paddingStart="16dp"
+            android:paddingEnd="16dp" android:textSize="18sp" android:textColor="#0F172A" android:drawableEnd="@drawable/ic_calendar"
+            android:clickable="true" android:focusable="true"/>
+        <TextView android:id="@+id/date_today_hint" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="5dp" android:text="Aujourd'hui" android:textSize="14sp" android:textColor="#4F46E5"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp"
+            android:text="Poids" android:textSize="14sp" android:textColor="#64748B"/>
+        <EditText android:id="@+id/weight_input" android:layout_width="match_parent" android:layout_height="130dp"
+            android:layout_marginTop="6dp" android:background="#FFFFFF" android:gravity="center" android:hint="0,0"
+            android:inputType="numberDecimal" android:textSize="48sp" android:textStyle="bold" android:textColor="#0F172A"
+            android:padding="12dp"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center"
+            android:text="kg" android:textSize="16sp" android:textColor="#64748B"/>
+        <Button android:id="@+id/save_measurement" android:layout_width="match_parent" android:layout_height="56dp"
+            android:layout_marginTop="22dp" android:text="Valider" android:textSize="16sp"/>
+    </LinearLayout>
+</ScrollView>
