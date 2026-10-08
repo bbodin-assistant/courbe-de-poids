@@ -13,6 +13,7 @@ public class WeightDatabase extends SQLiteOpenHelper {
     private static final String DB_NAME = "weight.db";
     private static final int DB_VERSION = 1;
     private static final String TABLE = "measurements";
+    private static final double MAX_WEIGHT_KG = 500.0;
 
     public static class Measurement {
         public final String date;
@@ -27,13 +28,27 @@ public class WeightDatabase extends SQLiteOpenHelper {
         super(context, DB_NAME, null, DB_VERSION);
     }
 
+    public static boolean isValidWeight(Double weight) {
+        return weight != null && Double.isFinite(weight) && weight > 0.0 && weight <= MAX_WEIGHT_KG;
+    }
+
     @Override public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE " + TABLE + " (date TEXT PRIMARY KEY, weight REAL NOT NULL)");
     }
 
-    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) { }
+    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        for (int version = oldVersion + 1; version <= newVersion; version++) {
+            switch (version) {
+                default:
+                    // No schema migration is currently required. Add each future
+                    // migration as a new case so existing data is preserved.
+                    break;
+            }
+        }
+    }
 
     public void save(String date, double weight) {
+        if (!isValidWeight(weight)) throw new IllegalArgumentException("Invalid weight");
         ContentValues v = new ContentValues();
         v.put("date", date);
         v.put("weight", weight);
@@ -55,7 +70,7 @@ public class WeightDatabase extends SQLiteOpenHelper {
     public List<Measurement> all() {
         List<Measurement> result = new ArrayList<>();
         Cursor c = getReadableDatabase().query(TABLE, new String[]{"date","weight"},
-                null, null, null, null, "date DESC");
+                null, null, null, null, "date ASC");
         try {
             while (c.moveToNext()) result.add(new Measurement(c.getString(0), c.getDouble(1)));
         } finally { c.close(); }
