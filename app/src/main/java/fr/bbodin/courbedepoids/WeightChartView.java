@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.util.AttributeSet;
 import android.view.View;
 import java.util.List;
 
@@ -12,6 +13,10 @@ public class WeightChartView extends View {
     private List<WeightDatabase.Measurement> data;
 
     public WeightChartView(Context context) { super(context); paint.setStrokeWidth(4f); }
+
+    public WeightChartView(Context context, AttributeSet attrs) { super(context, attrs); paint.setStrokeWidth(4f); }
+
+    public WeightChartView(Context context, AttributeSet attrs, int defStyleAttr) { super(context, attrs, defStyleAttr); paint.setStrokeWidth(4f); }
 
     public void setData(List<WeightDatabase.Measurement> data) { this.data = data; invalidate(); }
 
