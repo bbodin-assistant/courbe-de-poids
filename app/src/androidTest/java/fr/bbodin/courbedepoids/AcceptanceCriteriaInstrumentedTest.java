@@ -33,7 +33,6 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.GrantPermissionRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,18 +56,15 @@ public class AcceptanceCriteriaInstrumentedTest {
     public ActivityScenarioRule<MainActivity> mainRule =
             new ActivityScenarioRule<>(MainActivity.class);
 
-    @Rule
-    public GrantPermissionRule notificationPermissionRule =
-            Build.VERSION.SDK_INT >= 33
-                    ? GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS)
-                    : GrantPermissionRule.grant();
-
     @Before
     public void resetState() {
         context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         context.deleteDatabase("weight.db");
         context.getSharedPreferences("settings", Context.MODE_PRIVATE)
                 .edit().clear().commit();
+        if (Build.VERSION.SDK_INT >= 33) {
+            try { shell("pm grant " + PACKAGE + " " + Manifest.permission.POST_NOTIFICATIONS); } catch (Exception ignored) {}
+        }
         NotificationManager nm = context.getSystemService(NotificationManager.class);
         if (nm != null) nm.cancelAll();
     }
