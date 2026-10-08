@@ -44,6 +44,7 @@ public class MainActivity extends Activity {
                 startActivity(new Intent(this, AddMeasurementActivity.class)));
         findViewById(R.id.settings_button).setOnClickListener(v ->
                 startActivity(new Intent(this, SettingsActivity.class)));
+        seedDebugDataIfNeeded();
         refresh();
     }
 
@@ -71,6 +72,13 @@ public class MainActivity extends Activity {
 
     private String today() {
         return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+    }
+
+    private void seedDebugDataIfNeeded() {
+        if (!BuildConfig.DEBUG || !db.all().isEmpty()) return;
+        String[] dates = {"2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08"};
+        double[] weights = {82.4, 82.0, 81.7, 81.9, 81.5};
+        for (int i = 0; i < dates.length; i++) db.save(dates[i], weights[i]);
     }
 
     private void refresh() {
