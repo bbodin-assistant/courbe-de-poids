@@ -2,7 +2,6 @@ package fr.bbodin.courbedepoids;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
@@ -10,13 +9,11 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowInsetsController;
-import android.view.View;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-import fr.bbodin.courbedepoids.BuildConfig;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -38,13 +35,13 @@ public class MainActivity extends Activity {
         createNotificationChannel();
         requestNotificationPermissionIfNeeded();
 
-        findViewById(R.id.save_today).setOnClickListener(v -> showTodayWeightDialog());
+        findViewById(R.id.add_button).setOnClickListener(v ->
+                startActivity(new Intent(this, AddMeasurementActivity.class)));
         findViewById(R.id.history_button).setOnClickListener(v ->
                 startActivity(new Intent(this, HistoryActivity.class)));
-        findViewById(R.id.add_past_button).setOnClickListener(v ->
-                startActivity(new Intent(this, AddMeasurementActivity.class)));
         findViewById(R.id.settings_button).setOnClickListener(v ->
                 startActivity(new Intent(this, SettingsActivity.class)));
+
         seedDebugDataIfNeeded();
         refresh();
     }
@@ -87,46 +84,6 @@ public class MainActivity extends Activity {
         chart.setData(db.all());
         ((TextView) findViewById(R.id.today_status)).setText(
                 m == null ? "Aucune mesure aujourd'hui" : "Aujourd'hui · " + format(m.weight) + " kg");
-    }
-
-    private void showTodayWeightDialog() {
-        EditText input = new EditText(this);
-        input.setHint("Poids en kg");
-        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER
-                | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        WeightDatabase.Measurement current = db.get(today());
-        if (current != null) input.setText(format(current.weight));
-        input.setSelectAllOnFocus(true);
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Poids du jour")
-                .setView(input)
-                .setNegativeButton("Annuler", null)
-                .setPositiveButton("Enregistrer", null)
-                .create();
-
-        dialog.setOnShowListener(v -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button -> {
-                Double value = parse(input.getText().toString());
-                if (!WeightDatabase.isValidWeight(value)) {
-                    input.setError("Entrez un poids valide.");
-                    return;
-                }
-                db.save(today(), value);
-                dialog.dismiss();
-                Toast.makeText(this, "Poids enregistré.", Toast.LENGTH_SHORT).show();
-                refresh();
-            });
-            input.requestFocus();
-            dialog.getWindow().setSoftInputMode(
-                    android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-        });
-        dialog.show();
-    }
-
-    private Double parse(String s) {
-        try { return Double.parseDouble(s.trim().replace(',', '.')); }
-        catch (Exception e) { return null; }
     }
 
     private String format(double v) {
