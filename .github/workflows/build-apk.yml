@@ -116,15 +116,17 @@ jobs:
       - name: Run instrumented acceptance scenarios
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: 35
           target: google_apis
           arch: x86_64
-          profile: pixel_6
+          profile: pixel_5
           cores: 2
-          ram-size: 4096
-          heap-size: 512
+          ram-size: 4096M
+          heap-size: 512M
+          emulator-boot-timeout: 1200
+          disable-spellchecker: true
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics -memory 4096
+          emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -memory 4096
           script: bash scripts/run-instrumented-tests.sh
       - name: Upload instrumentation reports
         if: always()
