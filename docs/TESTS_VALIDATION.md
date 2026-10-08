@@ -54,9 +54,9 @@ Exemples :
 
 - `0.3`
 - `0.3-1`
-- `0.3-3`
+- `0.3-4`
 
-La valeur par défaut actuellement présente dans le dépôt est `0.3-3`. La CI ne dépend pas du message du commit : elle déclenche le build et les tests lorsque la version de `app/build.gradle` diffère de celle du commit parent.
+La valeur par défaut actuellement présente dans le dépôt est `0.3-4`. La CI ne dépend pas du message du commit : elle déclenche le build et les tests lorsque la version de `app/build.gradle` diffère de celle du commit parent.
 
 ## Identité de l'APK testé
 
