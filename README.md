@@ -61,7 +61,7 @@ Le projet utilise une application Android Java classique, sans framework multipl
 Avec un JDK 17, le SDK Android et Gradle disponibles :
 
 ```bash
-gradle assembleDebug -PVERSION_NAME=0.3-2
+gradle assembleDebug -PVERSION_NAME=0.3-3
 ```
 
 L'APK généré se trouve dans :
@@ -70,7 +70,7 @@ L'APK généré se trouve dans :
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Le numéro de version peut également être défini par défaut dans `app/build.gradle`. La version actuellement définie dans le dépôt est **0.3-2**.
+Le numéro de version peut également être défini par défaut dans `app/build.gradle`. La version actuellement définie dans le dépôt est **0.3-3**.
 
 ## Tests instrumentés
 
@@ -134,7 +134,7 @@ Exemples :
 
 - `0.3`
 - `0.3-1`
-- `0.3-2`
+- `0.3-3`
 
 La CI déclenche le build et les tests lorsqu'elle détecte un changement de cette version entre le commit courant et son parent.
 
