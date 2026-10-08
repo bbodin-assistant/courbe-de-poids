@@ -14,6 +14,11 @@ public class ReminderReceiver extends BroadcastReceiver {
     public static final String CHANNEL_ID = "weight_reminders";
 
     @Override public void onReceive(Context context, Intent intent) {
+        android.content.SharedPreferences p = context.getSharedPreferences("settings", Context.MODE_PRIVATE);
+        if (p.getBoolean("reminder_enabled", false)) {
+            ReminderScheduler.schedule(context, p.getInt("reminder_hour", 8), p.getInt("reminder_minute", 0));
+        }
+
         createChannel(context);
         if (Build.VERSION.SDK_INT >= 33 &&
                 context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return;
