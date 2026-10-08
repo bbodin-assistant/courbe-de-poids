@@ -1,79 +1,117 @@
-name: Validate and Build Android APK
+name: Build and Validate Android APK
 
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch:
+    branches: ["main"]
 
 permissions:
   contents: read
 
 jobs:
-  instrumented-tests:
-    name: Acceptance tests on Android emulator
+  version-gate:
+    name: Extract release version from commit
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Extract version from commit message
+        id: version
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          version="$(printf "%s\n" "$COMMIT_MESSAGE" | grep -oE "(^|[^0-9])([0-9]+\.[0-9]+(-[0-9]+)?)([^0-9]|$)" | head -n 1 | grep -oE "[0-9]+\.[0-9]+(-[0-9]+)?" || true)"
+          if [ -z "$version" ]; then
+            echo "Aucune version trouvée. Format attendu: 0.3 ou 0.3-1."
+            exit 0
+          fi
+          echo "Version détectée: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build-apk:
+    name: Build and publish APK
+    needs: version-gate
+    if: ${{ needs.version-gate.outputs.version != '' }}
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ needs.version-gate.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-
+          java-version: "17"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
+          gradle-version: "8.9"
+      - name: Build debug APK
+        env:
+          VERSION_NAME: ${{ needs.version-gate.outputs.version }}
+        run: gradle assembleDebug -PVERSION_NAME="$VERSION_NAME" --stacktrace
+      - name: Verify APK version
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          aapt dump badging app/build/outputs/apk/debug/app-debug.apk | grep -F "versionName='${{ needs.version-gate.outputs.version }}'"
+      - name: Upload version metadata
+        run: echo "${{ needs.version-gate.outputs.version }}" > app-version.txt
+      - name: Publish APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: courbe-de-poids-apk-${{ needs.version-gate.outputs.version }}
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app-version.txt
+          if-no-files-found: error
+          retention-days: 30
 
-      - name: Run instrumented acceptance scenarios
+  instrumented-tests:
+    name: Instrumented acceptance tests of published APK
+    needs: build-apk
+    if: ${{ needs.build-apk.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download published APK
+        uses: actions/download-artifact@v5
+        with:
+          name: courbe-de-poids-apk-${{ needs.build-apk.outputs.version }}
+          path: published-apk
+      - name: Verify published APK
+        run: |
+          test "${{ needs.build-apk.outputs.version }}" = "$(cat published-apk/app-version.txt)"
+          test -s published-apk/app-debug.apk
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Run instrumented acceptance scenarios against published APK
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          script: gradle connectedDebugAndroidTest --stacktrace
-
+          script: |
+            adb install -r published-apk/app-debug.apk
+            gradle assembleDebugAndroidTest --stacktrace
+            adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb shell am instrument -w -r -e package fr.bbodin.courbedepoids fr.bbodin.courbedepoids.test/androidx.test.runner.AndroidJUnitRunner
       - name: Upload instrumentation reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: instrumented-test-reports
+          name: instrumented-test-reports-${{ needs.build-apk.outputs.version }}
           path: |
-            app/build/reports/androidTests/connected/
-            app/build/outputs/androidTest-results/connected/
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
           if-no-files-found: warn
-
-  build:
-    name: Build APK after acceptance tests
-    needs: instrumented-tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
-
-      - name: Build debug APK
-        run: gradle assembleDebug --stacktrace
-
-      - name: Verify APK exists
-        run: test -s app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: courbe-de-poids-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          retention-days: 30
