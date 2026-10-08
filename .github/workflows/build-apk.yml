@@ -21,8 +21,7 @@ jobs:
           set -euo pipefail
           current_name="$(grep -E 'configuredVersionName|versionName' app/build.gradle | grep -oE '[0-9]+\.[0-9]+(-[0-9]+)?' | tail -n 1)"
           current_code="$(grep -E 'versionCode' app/build.gradle | grep -oE '[0-9]+' | head -n 1)"
-          test -n "$current_name"
-          test -n "$current_code"
+          test -n "$current_name" && test -n "$current_code"
           printf '%s\n' "$current_name" | grep -qE '^[0-9]+\.[0-9]+(-[0-9]+)?$'
           test "$current_code" -ge 1
           previous_name="$(git show HEAD^:app/build.gradle 2>/dev/null | grep -E 'configuredVersionName|versionName' | grep -oE '[0-9]+\.[0-9]+(-[0-9]+)?' | tail -n 1 || true)"
@@ -48,18 +47,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-
       - name: Read application version
         id: version
         run: |
@@ -67,20 +63,15 @@ jobs:
           version="$(grep -E 'configuredVersionName' app/build.gradle | grep -oE '[0-9]+\.[0-9]+(-[0-9]+)?' | tail -n 1)"
           test -n "$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-
       - name: Build debug APK and instrumentation test APK
         env:
           VERSION_NAME: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          gradle assembleDebug assembleDebugAndroidTest -PVERSION_NAME="$VERSION_NAME" --stacktrace
-
+        run: gradle assembleDebug assembleDebugAndroidTest -PVERSION_NAME="$VERSION_NAME" --stacktrace
       - name: Verify debug packages
         run: |
           set -euo pipefail
           test -s app/build/outputs/apk/debug/app-debug.apk
           test -s app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-
       - name: Publish debug packages
         uses: actions/upload-artifact@v4
         with:
@@ -98,31 +89,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Download debug packages
         uses: actions/download-artifact@v5
         with:
           name: courbe-de-poids-debug-${{ needs.build-debug.outputs.version }}
           path: published-debug
-
       - name: Install debug packages for test runner
         run: |
           set -euo pipefail
           mkdir -p app/build/outputs/apk/debug app/build/outputs/apk/androidTest/debug
           cp published-debug/app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/app-debug.apk
           cp published-debug/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-
       - name: Run instrumented acceptance scenarios
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -132,9 +118,7 @@ jobs:
           cores: 2
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
           disable-animations: true
-          script: |
-            bash scripts/run-instrumented-tests.sh
-
+          script: bash scripts/run-instrumented-tests.sh
       - name: Upload instrumentation reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -151,32 +135,49 @@ jobs:
   build-release:
     name: Build and publish signed release packages
     needs: instrumented-tests
-    if: ${{ needs.instrumented-tests.result == 'success' && secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+    if: ${{ needs.instrumented-tests.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Check signing secrets
+        id: signing
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Signing secrets are configured."
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Signing secrets are not configured; signed release is skipped."
+          fi
 
+      - name: Checkout
+        if: steps.signing.outputs.ready == 'true'
+        uses: actions/checkout@v4
       - name: Set up JDK 17
+        if: steps.signing.outputs.ready == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-
       - name: Set up Gradle
+        if: steps.signing.outputs.ready == 'true'
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-
       - name: Read application version
+        if: steps.signing.outputs.ready == 'true'
         id: version
         run: |
           set -euo pipefail
           version="$(grep -E 'configuredVersionName' app/build.gradle | grep -oE '[0-9]+\.[0-9]+(-[0-9]+)?' | tail -n 1)"
           test -n "$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-
       - name: Restore release keystore
+        if: steps.signing.outputs.ready == 'true'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
@@ -185,35 +186,31 @@ jobs:
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/courbe-de-poids-release.jks"
           test -s "$RUNNER_TEMP/courbe-de-poids-release.jks"
           keytool -list -keystore "$RUNNER_TEMP/courbe-de-poids-release.jks" -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >/dev/null
-
       - name: Build signed release APK and AAB
+        if: steps.signing.outputs.ready == 'true'
         env:
           VERSION_NAME: ${{ steps.version.outputs.version }}
           RELEASE_KEYSTORE_PATH: ${{ runner.temp }}/courbe-de-poids-release.jks
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-          gradle assembleRelease bundleRelease -PVERSION_NAME="$VERSION_NAME" --stacktrace
-
+        run: gradle assembleRelease bundleRelease -PVERSION_NAME="$VERSION_NAME" --stacktrace
       - name: Verify signed APK
+        if: steps.signing.outputs.ready == 'true'
         env:
           VERSION_NAME: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
           APK="app/build/outputs/apk/release/app-release.apk"
           AAB="app/build/outputs/bundle/release/app-release.aab"
-          test -s "$APK"
-          test -s "$AAB"
+          test -s "$APK" && test -s "$AAB"
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          test -n "$AAPT"
-          test -n "$APKSIGNER"
+          test -n "$AAPT" && test -n "$APKSIGNER"
           "$AAPT" dump badging "$APK" | grep -F "versionName='$VERSION_NAME'"
           "$APKSIGNER" verify --verbose "$APK"
-
       - name: Publish signed Android packages
+        if: steps.signing.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: courbe-de-poids-android-${{ steps.version.outputs.version }}
