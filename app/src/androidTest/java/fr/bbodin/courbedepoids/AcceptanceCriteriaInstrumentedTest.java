@@ -272,9 +272,8 @@ public class AcceptanceCriteriaInstrumentedTest {
     }
 
     @Test
-    public void criterion12_rappelFonctionneApplicationFermee() {
-        ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class);
-        scenario.close();
+    public void criterion12_rappelFonctionneApplicationFermee() throws Exception {
+        shell("am force-stop " + PACKAGE);
         new ReminderReceiver().onReceive(context, new Intent(context, ReminderReceiver.class));
         NotificationManager nm = context.getSystemService(NotificationManager.class);
         assertTrue(nm.getActiveNotifications().length > 0);
