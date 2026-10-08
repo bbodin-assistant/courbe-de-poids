@@ -48,8 +48,15 @@ fi
 adb shell pm grant fr.bbodin.courbedepoids android.permission.POST_NOTIFICATIONS || true
 adb logcat -c
 
+rm -f instrumentation.log instrumentation-logcat.txt
+adb logcat -v threadtime > instrumentation-logcat.txt 2>&1 &
+logcat_pid=$!
+
 adb shell am instrument -w -r -e package fr.bbodin.courbedepoids fr.bbodin.courbedepoids.test/androidx.test.runner.AndroidJUnitRunner > instrumentation.log 2>&1
 instrument_exit=$?
+
+kill "$logcat_pid" 2>/dev/null || true
+wait "$logcat_pid" 2>/dev/null || true
 
 cat instrumentation.log
 
@@ -59,13 +66,15 @@ grep -q "INSTRUMENTATION_STATUS_CODE: -2" instrumentation.log && crash_detected=
 
 if [ "$crash_detected" -eq 1 ]; then
   echo "Instrumentation process crashed."
-  adb logcat -d -v threadtime > instrumentation-logcat.txt
+  echo "Relevant crash stack trace:"
+  grep -n -A 40 -B 10 -E "FATAL EXCEPTION|AndroidRuntime|Process: fr\.bbodin\.courbedepoids|Process: fr\.bbodin\.courbedepoids\.test" instrumentation-logcat.txt | tail -n 160
   exit 1
 fi
 
 if [ "$instrument_exit" -ne 0 ]; then
   echo "Instrumentation command failed with exit code $instrument_exit."
-  adb logcat -d -v threadtime > instrumentation-logcat.txt
+  echo "Relevant crash stack trace:"
+  grep -n -A 40 -B 10 -E "FATAL EXCEPTION|AndroidRuntime|Process: fr\.bbodin\.courbedepoids|Process: fr\.bbodin\.courbedepoids\.test" instrumentation-logcat.txt | tail -n 160
   exit "$instrument_exit"
 fi
 
