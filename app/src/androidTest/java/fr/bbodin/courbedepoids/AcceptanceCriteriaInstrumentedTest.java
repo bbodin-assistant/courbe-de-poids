@@ -88,12 +88,15 @@ public class AcceptanceCriteriaInstrumentedTest {
 
     @Test
     public void criterion01_enregistrerLePoidsDuJour() {
-        ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class);
+        ActivityScenario<AddMeasurementActivity> entry = ActivityScenario.launch(AddMeasurementActivity.class);
         onView(withId(R.id.weight_input)).perform(replaceText("72,3"));
-        onView(withId(R.id.save_today)).perform(click());
-        onView(withId(R.id.today_status)).check(matches(withText("Mesure du jour : 72,3 kg")));
+        onView(withId(R.id.save_measurement)).perform(click());
+        entry.close();
+
+        ActivityScenario<MainActivity> main = ActivityScenario.launch(MainActivity.class);
+        onView(withId(R.id.today_status)).check(matches(withText("Aujourd'hui · 72,3 kg")));
         assertNotNull(db().get(new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Calendar.getInstance().getTime())));
-        scenario.close();
+        main.close();
     }
 
     @Test
