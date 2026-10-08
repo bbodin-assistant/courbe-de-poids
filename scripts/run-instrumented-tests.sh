@@ -2,7 +2,6 @@
 set +e
 
 adb wait-for-device
-adb shell 'while [[ "$(getprop sys.boot_completed)" != "1" ]]; do sleep 5; done'
 adb shell settings put global verifier_verify_adb_installs 0 || true
 adb shell settings put global package_verifier_enable 0 || true
 # Keep the emulator's Bluetooth stack from restarting repeatedly during UI tests.
