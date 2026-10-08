@@ -19,13 +19,13 @@ jobs:
       - name: Validate version format and release increment
         run: |
           set -euo pipefail
-          current_name="$(grep -E 'versionName' app/build.gradle | grep -oE '[0-9]+\.[0-9]+(-[0-9]+)?' | tail -n 1)"
+          current_name="$(grep -E 'configuredVersionName|versionName' app/build.gradle | grep -oE '[0-9]+\.[0-9]+(-[0-9]+)?' | tail -n 1)"
           current_code="$(grep -E 'versionCode' app/build.gradle | grep -oE '[0-9]+' | head -n 1)"
           test -n "$current_name"
           test -n "$current_code"
           printf '%s\n' "$current_name" | grep -qE '^[0-9]+\.[0-9]+(-[0-9]+)?$'
           test "$current_code" -ge 1
-          previous_name="$(git show HEAD^:app/build.gradle 2>/dev/null | grep -E 'versionName' | grep -oE '[0-9]+\.[0-9]+(-[0-9]+)?' | tail -n 1 || true)"
+          previous_name="$(git show HEAD^:app/build.gradle 2>/dev/null | grep -E 'configuredVersionName|versionName' | grep -oE '[0-9]+\.[0-9]+(-[0-9]+)?' | tail -n 1 || true)"
           previous_code="$(git show HEAD^:app/build.gradle 2>/dev/null | grep -E 'versionCode' | grep -oE '[0-9]+' | head -n 1 || true)"
           echo "Version courante : $current_name (code $current_code)"
           echo "Version précédente : $previous_name (code $previous_code)"
