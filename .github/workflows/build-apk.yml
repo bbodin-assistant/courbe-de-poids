@@ -39,8 +39,9 @@ jobs:
             exit 1
           fi
 
-  build-apk:
-    name: Build and publish signed Android packages
+  build-debug:
+    name: Build and publish debug APKs
+    needs: version-validation
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -67,18 +68,113 @@ jobs:
           test -n "$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Validate Android signing secrets
+      - name: Build debug APK and instrumentation test APK
         env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          VERSION_NAME: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          test -n "$ANDROID_KEYSTORE_BASE64" || { echo "Missing secret: ANDROID_KEYSTORE_BASE64"; exit 1; }
-          test -n "$ANDROID_KEYSTORE_PASSWORD" || { echo "Missing secret: ANDROID_KEYSTORE_PASSWORD"; exit 1; }
-          test -n "$ANDROID_KEY_ALIAS" || { echo "Missing secret: ANDROID_KEY_ALIAS"; exit 1; }
-          test -n "$ANDROID_KEY_PASSWORD" || { echo "Missing secret: ANDROID_KEY_PASSWORD"; exit 1; }
+          gradle assembleDebug assembleDebugAndroidTest -PVERSION_NAME="$VERSION_NAME" --stacktrace
+
+      - name: Verify debug packages
+        run: |
+          set -euo pipefail
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+
+      - name: Publish debug packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: courbe-de-poids-debug-${{ steps.version.outputs.version }}
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  instrumented-tests:
+    name: Instrumented acceptance tests
+    needs: build-debug
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download debug packages
+        uses: actions/download-artifact@v5
+        with:
+          name: courbe-de-poids-debug-${{ needs.build-debug.outputs.version }}
+          path: published-debug
+
+      - name: Install debug packages for test runner
+        run: |
+          set -euo pipefail
+          mkdir -p app/build/outputs/apk/debug app/build/outputs/apk/androidTest/debug
+          cp published-debug/app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/app-debug.apk
+          cp published-debug/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Run instrumented acceptance scenarios
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_2
+          cores: 2
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
+          disable-animations: true
+          script: |
+            bash scripts/run-instrumented-tests.sh
+
+      - name: Upload instrumentation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instrumented-test-reports-${{ needs.build-debug.outputs.version }}
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+            instrumentation.log
+            instrumentation-logcat.txt
+          if-no-files-found: warn
+          retention-days: 30
+
+  build-release:
+    name: Build and publish signed release packages
+    needs: instrumented-tests
+    if: ${{ needs.instrumented-tests.result == 'success' && secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Read application version
+        id: version
+        run: |
+          set -euo pipefail
+          version="$(grep -E 'configuredVersionName' app/build.gradle | grep -oE '[0-9]+\.[0-9]+(-[0-9]+)?' | tail -n 1)"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Restore release keystore
         env:
@@ -101,11 +197,6 @@ jobs:
           set -euo pipefail
           gradle assembleRelease bundleRelease -PVERSION_NAME="$VERSION_NAME" --stacktrace
 
-      - name: Build instrumented test APK
-        env:
-          VERSION_NAME: ${{ steps.version.outputs.version }}
-        run: gradle assembleDebugAndroidTest -PVERSION_NAME="$VERSION_NAME" --stacktrace
-
       - name: Verify signed APK
         env:
           VERSION_NAME: ${{ steps.version.outputs.version }}
@@ -122,9 +213,6 @@ jobs:
           "$AAPT" dump badging "$APK" | grep -F "versionName='$VERSION_NAME'"
           "$APKSIGNER" verify --verbose "$APK"
 
-      - name: Upload version metadata
-        run: echo "${{ steps.version.outputs.version }}" > app-version.txt
-
       - name: Publish signed Android packages
         uses: actions/upload-artifact@v4
         with:
@@ -132,59 +220,5 @@ jobs:
           path: |
             app/build/outputs/apk/release/app-release.apk
             app/build/outputs/bundle/release/app-release.aab
-            app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-            app-version.txt
           if-no-files-found: error
-          retention-days: 30
-
-  instrumented-tests:
-    name: Instrumented acceptance tests of debug APK
-    needs: build-apk
-    if: ${{ needs.build-apk.result == 'success' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Download published Android packages
-        uses: actions/download-artifact@v5
-        with:
-          name: courbe-de-poids-android-${{ needs.build-apk.outputs.version }}
-          path: published-android
-      - name: Verify published packages
-        run: |
-          set -euo pipefail
-          test "${{ needs.build-apk.outputs.version }}" = "$(cat published-android/app-version.txt)"
-          test -s published-android/app/build/outputs/apk/release/app-release.apk
-          test -s published-android/app/build/outputs/bundle/release/app-release.aab
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.9"
-      - name: Run instrumented acceptance scenarios
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 34
-          arch: x86_64
-          profile: pixel_2
-          cores: 2
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
-          disable-animations: true
-          script: |
-            bash scripts/run-instrumented-tests.sh
-      - name: Upload instrumentation reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: instrumented-test-reports-${{ needs.build-apk.outputs.version }}
-          path: |
-            app/build/reports/androidTests/
-            app/build/outputs/androidTest-results/
-            instrumentation.log
-            instrumentation-logcat.txt
-          if-no-files-found: warn
           retention-days: 30
