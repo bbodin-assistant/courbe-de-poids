@@ -60,7 +60,7 @@ jobs:
         id: version
         run: |
           set -euo pipefail
-          version="$(grep -E 'versionName' app/build.gradle | grep -oE '[0-9]+\.[0-9]+(-[0-9]+)?' | tail -n 1)"
+          version="$(grep -E 'configuredVersionName' app/build.gradle | grep -oE '[0-9]+\.[0-9]+(-[0-9]+)?' | tail -n 1)"
           test -n "$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
