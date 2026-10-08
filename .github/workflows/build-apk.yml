@@ -117,11 +117,14 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
+          target: google_apis
           arch: x86_64
-          profile: pixel_2
+          profile: pixel_6
           cores: 2
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
+          ram-size: 4096
+          heap-size: 512
           disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics -memory 4096
           script: bash scripts/run-instrumented-tests.sh
       - name: Upload instrumentation reports
         if: always()
