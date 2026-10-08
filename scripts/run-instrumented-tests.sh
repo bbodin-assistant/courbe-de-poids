@@ -46,6 +46,7 @@ if [ $? -ne 0 ]; then
 fi
 
 adb shell pm grant fr.bbodin.courbedepoids android.permission.POST_NOTIFICATIONS || true
+adb shell am force-stop fr.bbodin.courbedepoids
 adb logcat -c
 
 rm -f instrumentation.log instrumentation-logcat.txt
