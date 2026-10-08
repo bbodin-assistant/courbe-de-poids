@@ -27,7 +27,7 @@ public class AddMeasurementActivity extends Activity {
     private void save(){
         Double w;
         try{w=Double.parseDouble(weightInput.getText().toString().trim().replace(',','.'));}catch(Exception e){w=null;}
-        if(w==null||w<=0){weightInput.setError("Entrez un poids valide.");return;}
+        if(!WeightDatabase.isValidWeight(w)){weightInput.setError("Entrez un poids valide.");return;}
         String key=new SimpleDateFormat("yyyy-MM-dd",Locale.US).format(date.getTime());
         new WeightDatabase(this).save(key,w);
         Toast.makeText(this,"Mesure enregistrée.",Toast.LENGTH_SHORT).show(); finish();
