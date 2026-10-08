@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">Courbe de poids</string>
     <string name="splash_tagline">Suivez votre poids, atteignez vos objectifs !</string>
+    <string name="splash_start">Commencer</string>
 </resources>
