@@ -34,6 +34,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.GrantPermissionRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,6 +52,7 @@ import java.util.Locale;
 public class AcceptanceCriteriaInstrumentedTest {
     private static final String PACKAGE = "fr.bbodin.courbedepoids";
     private Context context;
+    private WeightDatabase database;
 
     @Rule
     public GrantPermissionRule notificationPermissionRule =
@@ -67,7 +69,17 @@ public class AcceptanceCriteriaInstrumentedTest {
     }
 
     private WeightDatabase db() {
-        return new WeightDatabase(context);
+        if (database == null) database = new WeightDatabase(context);
+        return database;
+    }
+
+    @After
+    public void cleanupState() throws Exception {
+        if (database != null) {
+            database.close();
+            database = null;
+        }
+        shell("am force-stop " + PACKAGE);
     }
 
     private String dateOffset(int days) {
