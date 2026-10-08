@@ -54,7 +54,9 @@ jobs:
       - name: Verify APK version
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
-          aapt dump badging app/build/outputs/apk/debug/app-debug.apk | grep -F "versionName='${{ needs.version-gate.outputs.version }}'"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          test -n "$AAPT"
+          "$AAPT" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -F "versionName='${{ needs.version-gate.outputs.version }}'"
       - name: Upload version metadata
         run: echo "${{ needs.version-gate.outputs.version }}" > app-version.txt
       - name: Publish APK artifact
