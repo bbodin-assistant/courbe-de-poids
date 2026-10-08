@@ -294,7 +294,7 @@ public class AcceptanceCriteriaInstrumentedTest {
     }
 
     @Test
-    public void criterion15_lapplicationEstInstallableEtVersionnee() {
+    public void criterion15_lapplicationEstInstallableEtVersionnee() throws Exception {
         android.content.pm.ApplicationInfo info = context.getApplicationInfo();
         assertNotNull(info);
         assertEquals(PACKAGE, context.getPackageName());
