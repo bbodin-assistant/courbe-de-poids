@@ -12,6 +12,10 @@ android {
     namespace 'fr.bbodin.courbedepoids'
     compileSdk 35
 
+    buildFeatures {
+        buildConfig true
+    }
+
     defaultConfig {
         applicationId 'fr.bbodin.courbedepoids'
         minSdk 26
