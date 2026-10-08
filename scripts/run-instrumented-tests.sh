@@ -26,11 +26,11 @@ install_apk() {
   return 1
 }
 
-APP_APK="$(find published-apk -type f -name 'app-debug.apk' -print -quit)"
-TEST_APK="$(find published-apk -type f -name 'app-debug-androidTest.apk' -print -quit)"
+APP_APK="$(find published-debug -type f -name 'app-debug.apk' -print -quit)"
+TEST_APK="$(find published-debug -type f -name 'app-debug-androidTest.apk' -print -quit)"
 
-test -n "$APP_APK" || { echo "Application APK not found in downloaded artifact."; find published-apk -type f -print; exit 1; }
-test -n "$TEST_APK" || { echo "Instrumented test APK not found in downloaded artifact."; find published-apk -type f -print; exit 1; }
+test -n "$APP_APK" || { echo "Application APK not found in downloaded artifact."; find published-debug -type f -print; exit 1; }
+test -n "$TEST_APK" || { echo "Instrumented test APK not found in downloaded artifact."; find published-debug -type f -print; exit 1; }
 
 echo "Application APK: $APP_APK"
 echo "Instrumented test APK: $TEST_APK"
