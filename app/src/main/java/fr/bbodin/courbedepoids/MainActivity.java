@@ -16,6 +16,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import fr.bbodin.courbedepoids.BuildConfig;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
