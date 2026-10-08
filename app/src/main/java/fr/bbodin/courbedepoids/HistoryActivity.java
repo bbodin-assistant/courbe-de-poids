@@ -4,8 +4,10 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.os.Bundle;
 import android.content.Intent;
+import android.text.InputType;
 import android.view.Gravity;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,9 +30,13 @@ public class HistoryActivity extends Activity {
         if(ms.isEmpty()){TextView e=new TextView(this);e.setText("Aucune mesure.");e.setTextSize(18);list.addView(e);}
     }
     private void edit(WeightDatabase.Measurement m){
-        final android.widget.EditText input=new android.widget.EditText(this);input.setInputType(2|8192);input.setText(String.format(Locale.FRANCE,"%.1f",m.weight));
+        final EditText input=new EditText(this);input.setInputType(InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_FLAG_DECIMAL);input.setText(String.format(Locale.FRANCE,"%.1f",m.weight));
         new AlertDialog.Builder(this).setTitle("Modifier "+m.date).setView(input).setPositiveButton("Enregistrer",(d,w)->{
-            try{double value=Double.parseDouble(input.getText().toString().replace(',','.'));if(value<=0)throw new Exception();db.save(m.date,value);render();}catch(Exception e){Toast.makeText(this,"Poids invalide.",Toast.LENGTH_SHORT).show();}
+            try{
+                double value=Double.parseDouble(input.getText().toString().replace(',','.'));
+                if(!WeightDatabase.isValidWeight(value)) throw new IllegalArgumentException();
+                db.save(m.date,value);render();
+            }catch(Exception e){Toast.makeText(this,"Poids invalide.",Toast.LENGTH_SHORT).show();}
         }).setNegativeButton("Annuler",null).show();
     }
     private void delete(WeightDatabase.Measurement m){
