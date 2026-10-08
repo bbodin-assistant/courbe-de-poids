@@ -3,8 +3,6 @@ plugins {
 }
 
 def configuredVersionName = project.findProperty('VERSION_NAME') ?: '0.3-12'
-def versionCodeMatch = (configuredVersionName =~ /-(\d+)$/)
-def configuredVersionCode = versionCodeMatch.find() ? versionCodeMatch.group(1).toInteger() : 1
 
 android {
     namespace 'fr.bbodin.courbedepoids'
@@ -14,7 +12,7 @@ android {
         applicationId 'fr.bbodin.courbedepoids'
         minSdk 26
         targetSdk 35
-        versionCode configuredVersionCode
+        versionCode 12
         versionName configuredVersionName
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
