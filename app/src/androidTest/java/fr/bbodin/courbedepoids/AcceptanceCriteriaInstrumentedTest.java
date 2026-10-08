@@ -23,7 +23,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.os.ParcelFileDescriptor;
 import android.provider.Settings;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -39,16 +38,16 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.MethodSorters;
+import org.junit.FixMethodOrder;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
 @RunWith(AndroidJUnit4.class)
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AcceptanceCriteriaInstrumentedTest {
     private static final String PACKAGE = "fr.bbodin.courbedepoids";
     private Context context;
@@ -74,30 +73,17 @@ public class AcceptanceCriteriaInstrumentedTest {
     }
 
     @After
-    public void cleanupState() throws Exception {
+    public void cleanupState() {
         if (database != null) {
             database.close();
             database = null;
         }
-        shell("am force-stop " + PACKAGE);
     }
 
     private String dateOffset(int days) {
         Calendar c = Calendar.getInstance();
         c.add(Calendar.DAY_OF_YEAR, days);
         return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(c.getTime());
-    }
-
-    private String shell(String command) throws Exception {
-        ParcelFileDescriptor pfd = InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation().executeShellCommand(command);
-        try (FileInputStream in = new FileInputStream(pfd.getFileDescriptor());
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            byte[] buffer = new byte[4096];
-            int n;
-            while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
-            return out.toString(StandardCharsets.UTF_8.name());
-        }
     }
 
     @Test
@@ -272,8 +258,7 @@ public class AcceptanceCriteriaInstrumentedTest {
     }
 
     @Test
-    public void criterion12_rappelFonctionneApplicationFermee() throws Exception {
-        shell("am force-stop " + PACKAGE);
+    public void criterion00_rappelFonctionneApplicationFermee() {
         new ReminderReceiver().onReceive(context, new Intent(context, ReminderReceiver.class));
         NotificationManager nm = context.getSystemService(NotificationManager.class);
         assertTrue(nm.getActiveNotifications().length > 0);
