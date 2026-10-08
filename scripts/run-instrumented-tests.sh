@@ -4,6 +4,11 @@ set +e
 adb wait-for-device
 adb shell settings put global verifier_verify_adb_installs 0 || true
 adb shell settings put global package_verifier_enable 0 || true
+# Keep the emulator's Bluetooth stack from restarting repeatedly during UI tests.
+adb shell svc bluetooth disable || true
+# Let system services settle before launching Espresso.
+adb shell am wait-for-broadcast-idle || true
+sleep 5
 
 install_apk() {
   local apk="$1"
