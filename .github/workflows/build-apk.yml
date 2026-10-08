@@ -122,25 +122,29 @@ jobs:
             adb shell pm grant fr.bbodin.courbedepoids android.permission.POST_NOTIFICATIONS || true
             adb logcat -c
 
+            set +e
             adb shell am instrument -w -r -e package fr.bbodin.courbedepoids fr.bbodin.courbedepoids.test/androidx.test.runner.AndroidJUnitRunner > instrumentation.log 2>&1
             instrument_exit=$?
+            set -e
             cat instrumentation.log
 
-            if grep -q "INSTRUMENTATION_RESULT: shortMsg=Process crashed." instrumentation.log; then
+            grep -q "INSTRUMENTATION_RESULT: shortMsg=Process crashed." instrumentation.log && {
               echo "Instrumentation process crashed."
               adb logcat -d -v threadtime > instrumentation-logcat.txt
               exit 1
-            fi
-            if grep -q "INSTRUMENTATION_STATUS_CODE: -2" instrumentation.log; then
+            } || true
+
+            grep -q "INSTRUMENTATION_STATUS_CODE: -2" instrumentation.log && {
               echo "Instrumentation reported a process crash."
               adb logcat -d -v threadtime > instrumentation-logcat.txt
               exit 1
-            fi
-            if [ "$instrument_exit" -ne 0 ]; then
+            } || true
+
+            [ "$instrument_exit" -eq 0 ] || {
               echo "Instrumentation command failed with exit code $instrument_exit."
               adb logcat -d -v threadtime > instrumentation-logcat.txt
               exit "$instrument_exit"
-            fi
+            }
       - name: Upload instrumentation reports
         if: always()
         uses: actions/upload-artifact@v4
