@@ -31,6 +31,7 @@ import android.widget.TimePicker;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.rule.GrantPermissionRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
@@ -51,15 +52,16 @@ public class AcceptanceCriteriaInstrumentedTest {
     private static final String PACKAGE = "fr.bbodin.courbedepoids";
     private Context context;
 
+    @Rule
+    public GrantPermissionRule notificationPermissionRule =
+            GrantPermissionRule.grant(Manifest.permission.POST_NOTIFICATIONS);
+
     @Before
     public void resetState() {
         context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         context.deleteDatabase("weight.db");
         context.getSharedPreferences("settings", Context.MODE_PRIVATE)
                 .edit().clear().commit();
-        if (Build.VERSION.SDK_INT >= 33) {
-            try { shell("pm grant " + PACKAGE + " " + Manifest.permission.POST_NOTIFICATIONS); } catch (Exception ignored) {}
-        }
         NotificationManager nm = context.getSystemService(NotificationManager.class);
         if (nm != null) nm.cancelAll();
     }
