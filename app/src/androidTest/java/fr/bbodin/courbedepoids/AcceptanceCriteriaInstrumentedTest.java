@@ -104,7 +104,7 @@ public class AcceptanceCriteriaInstrumentedTest {
         String past = dateOffset(-2);
         db().save(past, 71.4);
         ActivityScenario<HistoryActivity> scenario = ActivityScenario.launch(HistoryActivity.class);
-        onView(withText(allOf(withText(past + "   71,4 kg")))).check(matches(isDisplayed()));
+        onView(withText(past + "   71,4 kg")).check(matches(isDisplayed()));
         scenario.close();
     }
 
