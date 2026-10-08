@@ -117,9 +117,30 @@ jobs:
           profile: pixel_2
           disable-animations: true
           script: |
+            set -o pipefail
             adb install -r published-apk/app/build/outputs/apk/debug/app-debug.apk
             adb install -r published-apk/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-            adb shell am instrument -w -r -e package fr.bbodin.courbedepoids fr.bbodin.courbedepoids.test/androidx.test.runner.AndroidJUnitRunner
+            adb shell pm grant fr.bbodin.courbedepoids android.permission.POST_NOTIFICATIONS || true
+            adb logcat -c
+            set +e
+            adb shell am instrument -w -r -e package fr.bbodin.courbedepoids fr.bbodin.courbedepoids.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tee instrumentation.log
+            instrument_exit=${PIPESTATUS[0]}
+            set -e
+            if grep -q "INSTRUMENTATION_RESULT: shortMsg=Process crashed." instrumentation.log; then
+              echo "Instrumentation process crashed."
+              adb logcat -d -v threadtime > instrumentation-logcat.txt
+              exit 1
+            fi
+            if grep -q "INSTRUMENTATION_STATUS_CODE: -2" instrumentation.log; then
+              echo "Instrumentation reported a process crash."
+              adb logcat -d -v threadtime > instrumentation-logcat.txt
+              exit 1
+            fi
+            if [ "$instrument_exit" -ne 0 ]; then
+              echo "Instrumentation command failed with exit code $instrument_exit."
+              adb logcat -d -v threadtime > instrumentation-logcat.txt
+              exit "$instrument_exit"
+            fi
       - name: Upload instrumentation reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -128,5 +149,7 @@ jobs:
           path: |
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
+            instrumentation.log
+            instrumentation-logcat.txt
           if-no-files-found: warn
           retention-days: 30
