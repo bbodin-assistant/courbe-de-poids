@@ -230,6 +230,12 @@ public class AcceptanceCriteriaInstrumentedTest {
         context.getSharedPreferences("settings", Context.MODE_PRIVATE)
                 .edit().putBoolean("reminder_enabled", true).putInt("reminder_hour", 8).putInt("reminder_minute", 0).commit();
 
+        ReminderScheduler.schedule(context, 8, 0);
+        PendingIntent scheduled = PendingIntent.getBroadcast(
+                context, 4242, new Intent(context, ReminderReceiver.class),
+                PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE);
+        assertNotNull("Le rappel doit être programmé", scheduled);
+
         new ReminderReceiver().onReceive(context, new Intent(context, ReminderReceiver.class));
 
         NotificationManager nm = context.getSystemService(NotificationManager.class);
