@@ -60,12 +60,24 @@ docs/
 
 Le projet utilise une application Android Java classique, sans framework multiplateforme.
 
-## Construire l'APK
+## Configuration locale
+
+Copiez le modèle puis adaptez les chemins et paramètres à votre machine :
+
+```bash
+cp .env.example .env
+```
+
+Le fichier `.env` est ignoré par Git. N'y stockez jamais de secrets dans un fichier suivi par Git et ne commitez jamais le keystore. `VERSION_NAME` est défini dans `.env` pour les builds locaux ; la valeur de repli et celle utilisée par la CI proviennent de `.env.example`.
+
+Les valeurs contenant des caractères spéciaux doivent être écrites en respectant la syntaxe Make utilisée par le fichier : dans une valeur Make, doublez les signes dollar (`$$`) et échappez les dièses qui doivent être littéraux.
+
+## Construire l'APK debug
 
 Avec un JDK 17, le SDK Android et Gradle disponibles :
 
 ```bash
-gradle assembleDebug -PVERSION_NAME=0.3-4
+make build
 ```
 
 L'APK généré se trouve dans :
@@ -74,60 +86,46 @@ L'APK généré se trouve dans :
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Le numéro de version peut également être défini par défaut dans `app/build.gradle`. La version actuellement définie dans le dépôt est **0.3-4**.
+## Construire un APK release signé
 
-## Tests instrumentés
+Renseignez dans `.env` les quatre paramètres de signature ainsi que `RELEASE_KEYSTORE_PATH`. Le chemin du keystore est relatif à la racine du dépôt, sauf s'il est absolu.
 
-Les scénarios d'acceptation sont regroupés dans :
-
-```
-app/src/androidTest/java/fr/bbodin/courbedepoids/AcceptanceCriteriaInstrumentedTest.java
+```bash
+make release
 ```
 
-Ils couvrent notamment :
+L'APK généré se trouve dans :
 
-1. enregistrement du poids du jour ;
-2. ajout d'une mesure passée ;
-3. unicité d'une mesure par date ;
-4. modification ;
-5. suppression ;
-6. affichage et ordre de l'historique ;
-7. représentation dans la courbe ;
-8. activation/désactivation du rappel ;
-9. choix de l'heure ;
-10. déclenchement d'une notification ;
-11. ouverture de l'application depuis la notification ;
-12. fonctionnement lorsque l'activité est fermée ;
-13. conservation des données après fermeture ;
-14. conservation après redémarrage simulé ;
-15. présence d'une version dans l'application.
+```
+app/build/outputs/apk/release/app-release.apk
+```
 
-La description détaillée de la validation se trouve dans [`docs/TESTS_VALIDATION.md`](docs/TESTS_VALIDATION.md).
+## Tests
+
+Tests unitaires JVM :
+
+```bash
+make test-unit
+```
+
+Tests instrumentés (un appareil ou émulateur doit être connecté) :
+
+```bash
+make devices
+make test
+```
+
+Les scénarios d'acceptation sont regroupés dans `app/src/androidTest/java/fr/bbodin/courbedepoids/AcceptanceCriteriaInstrumentedTest.java`. La description détaillée de la validation se trouve dans [`docs/TESTS_VALIDATION.md`](docs/TESTS_VALIDATION.md).
 
 ## CI GitHub Actions
 
-Le workflow [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) s'exécute sur les pushes vers `main`. Il valide la version et construit l'APK debug, puis :
+Le workflow [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) s'exécute sur les pushes vers `main`. Il valide le format de version et l'incrément du `versionCode`, construit l'APK debug, puis publie un artefact conservé 30 jours et met à jour la pré-release GitHub `latest-debug` avec `app-debug.apk`.
 
-- publie un artefact temporaire conservé 30 jours ;
-- met à jour une pré-release GitHub `latest-debug` avec le fichier `app-debug.apk`, accessible par le lien direct en haut de cette page.
-
-Cette pré-release contient uniquement l'APK debug. La génération de l'APK/AAB release signé et les tests instrumentés restent désactivés.
+La CI lit la version par défaut depuis `.env.example` et ne nécessite aucun fichier `.env` privé. Cette pré-release contient uniquement l'APK debug ; la génération de l'APK/AAB release signé et les tests instrumentés restent désactivés.
 
 ## Versionnement
 
-La version suit la convention :
-
-```
-milestonecount.featurecount-patchcount
-```
-
-Exemples :
-
-- `0.3`
-- `0.3-1`
-- `0.3-4`
-
-La CI valide le format de version et vérifie l'incrément du `versionCode` lorsqu'une nouvelle version est déclarée.
+La valeur de version par défaut est définie une seule fois dans `.env.example` (`VERSION_NAME`). La CI valide le format et vérifie l'incrément du `versionCode` lorsqu'une nouvelle version est déclarée.
 
 ## Licence
 
