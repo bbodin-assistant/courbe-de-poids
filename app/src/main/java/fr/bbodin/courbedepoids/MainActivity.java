@@ -33,6 +33,13 @@ public class MainActivity extends Activity {
             selectedTab = savedInstanceState.getInt("selected_tab", 0);
         }
         BottomNavigation.updateStyles(this, selectedTab);
+        if (savedInstanceState == null && getIntent().getBooleanExtra("restore_backup_on_start", false)) {
+            showTab(3);
+            getFragmentManager().executePendingTransactions();
+            android.app.Fragment fragment = getFragmentManager().findFragmentById(R.id.fragment_container);
+            if (fragment instanceof SettingsFragment) ((SettingsFragment) fragment).startRestoreFlow();
+            getIntent().removeExtra("restore_backup_on_start");
+        }
     }
 
     public void showTab(int tab) {

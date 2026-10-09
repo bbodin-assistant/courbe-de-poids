@@ -88,6 +88,8 @@ public class SettingsFragment extends Fragment {
         startActivityForResult(intent, REQUEST_EXPORT);
     }
 
+    public void startRestoreFlow() { importData(); }
+
     private void importData() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);

@@ -47,13 +47,24 @@
             android:src="@drawable/ic_splash_chart" />
 
         <Button
-            android:id="@+id/start_button"
+            android:id="@+id/new_user_button"
             android:layout_width="match_parent"
             android:layout_height="52dp"
             android:layout_marginTop="28dp"
             android:backgroundTint="#147BEF"
-            android:text="@string/splash_start"
+            android:text="@string/splash_new_user"
             android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/existing_user_button"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="12dp"
+            android:backgroundTint="#E8F2FF"
+            android:text="@string/splash_existing_user"
+            android:textColor="#147BEF"
             android:textSize="16sp"
             android:textStyle="bold" />
 

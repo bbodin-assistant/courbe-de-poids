@@ -18,7 +18,7 @@ public class SplashActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         if (getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(INTRO_SHOWN, false)) {
-            openMain();
+            openMain(false);
             return;
         }
 
