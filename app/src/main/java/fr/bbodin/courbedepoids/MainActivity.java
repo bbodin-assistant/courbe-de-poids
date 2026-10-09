@@ -35,12 +35,9 @@ public class MainActivity extends Activity {
         createNotificationChannel();
         requestNotificationPermissionIfNeeded();
 
-        findViewById(R.id.add_button).setOnClickListener(v ->
+        BottomNavigation.bind(this);
+        findViewById(R.id.add_measurement_cta).setOnClickListener(v ->
                 startActivity(new Intent(this, AddMeasurementActivity.class)));
-        findViewById(R.id.history_button).setOnClickListener(v ->
-                startActivity(new Intent(this, HistoryActivity.class)));
-        findViewById(R.id.settings_button).setOnClickListener(v ->
-                startActivity(new Intent(this, SettingsActivity.class)));
 
         seedDebugDataIfNeeded();
         refresh();
