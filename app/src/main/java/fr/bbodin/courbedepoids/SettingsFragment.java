@@ -134,7 +134,7 @@ public class SettingsFragment extends Fragment {
     private void importData() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("application/json");
+        intent.setType("text/csv");
         startActivityForResult(intent, REQUEST_IMPORT);
     }
 
@@ -171,27 +171,37 @@ public class SettingsFragment extends Fragment {
     }
 
     private void writeExport(Uri uri) throws Exception {
-        JSONObject backup = BackupManager.createBackup(getActivity(), db);
         try (OutputStream out = getActivity().getContentResolver().openOutputStream(uri)) {
             if (out == null) throw new IllegalStateException("No output stream");
-            out.write((backup.toString(2) + "\n").getBytes(StandardCharsets.UTF_8));
+            out.write("date,weight_kg\n".getBytes(StandardCharsets.UTF_8));
+            for (WeightDatabase.Measurement measurement : db.all()) {
+                String row = measurement.date + "," + String.format(Locale.US, "%.2f", measurement.weight) + "\n";
+                out.write(row.getBytes(StandardCharsets.UTF_8));
+            }
         }
-        Toast.makeText(getActivity(), "Sauvegarde créée.", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(), "Fichier CSV téléchargé.", Toast.LENGTH_SHORT).show();
     }
 
     private void readImport(Uri uri) throws Exception {
-        StringBuilder json = new StringBuilder();
+        int imported = 0;
         try (InputStream in = getActivity().getContentResolver().openInputStream(uri)) {
             if (in == null) throw new IllegalStateException("No input stream");
             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             String line;
-            while ((line = reader.readLine()) != null) json.append(line);
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || line.toLowerCase(Locale.ROOT).startsWith("date,")) continue;
+                String[] columns = line.split(",");
+                if (columns.length < 2 || !columns[0].trim().matches("\\d{4}-\\d{2}-\\d{2}")) continue;
+                try {
+                    double weight = Double.parseDouble(columns[1].trim().replace(',', '.'));
+                    if (!WeightDatabase.isValidWeight(weight)) continue;
+                    db.save(columns[0].trim(), weight);
+                    imported++;
+                } catch (NumberFormatException ignored) { }
+            }
         }
-        int restored = BackupManager.restoreBackup(getActivity(), db, new JSONObject(json.toString()));
-        enabled.setChecked(getActivity().getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
-                .getBoolean("reminder_enabled", false));
-        updateTimeText();
-        Toast.makeText(getActivity(), "Sauvegarde restaurée : " + restored + " mesure(s).", Toast.LENGTH_LONG).show();
+        Toast.makeText(getActivity(), imported + " mesure(s) importée(s) depuis le CSV.", Toast.LENGTH_LONG).show();
     }
 
 }
