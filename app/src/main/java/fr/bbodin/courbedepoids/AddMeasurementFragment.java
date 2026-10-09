@@ -34,7 +34,7 @@ public class AddMeasurementFragment extends Fragment {
     }
 
     private void openDatePicker() {
-        new DatePickerDialog(requireActivity(), (picker, year, month, day) -> {
+        new DatePickerDialog(getActivity(), (picker, year, month, day) -> {
             date.set(year, month, day);
             date.set(Calendar.HOUR_OF_DAY, 0);
             date.set(Calendar.MINUTE, 0);
@@ -72,8 +72,8 @@ public class AddMeasurementFragment extends Fragment {
             return;
         }
         String key = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(date.getTime());
-        new WeightDatabase(requireActivity()).save(key, value);
-        Toast.makeText(requireActivity(), "Mesure enregistrée.", Toast.LENGTH_SHORT).show();
-        ((MainActivity) requireActivity()).showTab(0);
+        new WeightDatabase(getActivity()).save(key, value);
+        Toast.makeText(getActivity(), "Mesure enregistrée.", Toast.LENGTH_SHORT).show();
+        ((MainActivity) getActivity()).showTab(0);
     }
 }
