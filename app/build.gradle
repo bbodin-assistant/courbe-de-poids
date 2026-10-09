@@ -2,7 +2,7 @@ plugins {
     id 'com.android.application'
 }
 
-def configuredVersionName = project.findProperty('VERSION_NAME') ?: '0.3-13'
+def configuredVersionName = project.findProperty('VERSION_NAME') ?: '0.3-14'
 def releaseKeystorePath = System.getenv('RELEASE_KEYSTORE_PATH')
 def releaseKeystorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD')
 def releaseKeyAlias = System.getenv('ANDROID_KEY_ALIAS')
@@ -20,7 +20,7 @@ android {
         applicationId 'fr.bbodin.courbedepoids'
         minSdk 26
         targetSdk 35
-        versionCode 13
+        versionCode 14
         versionName configuredVersionName
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
@@ -55,6 +55,7 @@ android {
 }
 
 dependencies {
+    implementation 'androidx.work:work-runtime:2.10.1'
     androidTestImplementation 'androidx.test:runner:1.7.0'
     androidTestImplementation 'androidx.test:rules:1.7.0'
     androidTestImplementation 'androidx.test.ext:junit:1.3.0'

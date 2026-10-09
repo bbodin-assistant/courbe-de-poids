@@ -24,6 +24,9 @@ import org.json.JSONObject;
 public class SettingsFragment extends Fragment {
     private static final int REQUEST_EXPORT = 2001;
     private static final int REQUEST_IMPORT = 2002;
+    private static final int REQUEST_BACKUP_FOLDER = 2003;
+    private Switch automaticBackup;
+    private TextView backupLocation;
     private Switch enabled;
     private TextView time;
     private android.content.SharedPreferences prefs;
@@ -45,6 +48,22 @@ public class SettingsFragment extends Fragment {
         time.setOnClickListener(v -> pickTime());
         view.findViewById(R.id.export_button).setOnClickListener(v -> exportData());
         view.findViewById(R.id.import_button).setOnClickListener(v -> importData());
+        automaticBackup = view.findViewById(R.id.automatic_backup_enabled);
+        backupLocation = view.findViewById(R.id.automatic_backup_location);
+        updateBackupStatus();
+        view.findViewById(R.id.choose_backup_folder).setOnClickListener(v -> chooseBackupFolder());
+        automaticBackup.setChecked(prefs.getBoolean(AutoBackupScheduler.PREF_ENABLED, false));
+        automaticBackup.setOnCheckedChangeListener((button, checked) -> {
+            if (checked && prefs.getString(AutoBackupScheduler.PREF_TREE_URI, null) == null) {
+                automaticBackup.setChecked(false);
+                chooseBackupFolder();
+                return;
+            }
+            prefs.edit().putBoolean(AutoBackupScheduler.PREF_ENABLED, checked).apply();
+            if (checked) AutoBackupScheduler.enable(requireActivity());
+            else AutoBackupScheduler.disable(requireActivity());
+            updateBackupStatus();
+        });
         enabled.setOnCheckedChangeListener((button, checked) -> {
             prefs.edit().putBoolean("reminder_enabled", checked).apply();
             if (checked) ReminderScheduler.schedule(requireActivity(), prefs.getInt("reminder_hour", 8), prefs.getInt("reminder_minute", 0));
@@ -90,6 +109,26 @@ public class SettingsFragment extends Fragment {
 
     public void startRestoreFlow() { importData(); }
 
+    private void chooseBackupFolder() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        startActivityForResult(intent, REQUEST_BACKUP_FOLDER);
+    }
+
+    private void updateBackupStatus() {
+        if (backupLocation == null) return;
+        String uri = prefs.getString(AutoBackupScheduler.PREF_TREE_URI, null);
+        boolean on = prefs.getBoolean(AutoBackupScheduler.PREF_ENABLED, false);
+        if (!on) backupLocation.setText("Désactivée");
+        else if (uri == null) backupLocation.setText("Choisissez un dossier pour démarrer.");
+        else {
+            long last = prefs.getLong(AutoBackupScheduler.PREF_LAST_SUCCESS, 0L);
+            backupLocation.setText(last == 0L ? "Activée · première sauvegarde en attente"
+                    : "Activée · dernière sauvegarde : " + java.text.DateFormat.getDateTimeInstance().format(new java.util.Date(last)));
+        }
+    }
+
     private void importData() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -101,7 +140,28 @@ public class SettingsFragment extends Fragment {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode != android.app.Activity.RESULT_OK || data == null || data.getData() == null) return;
         try {
-            if (requestCode == REQUEST_EXPORT) writeExport(data.getData());
+            if (requestCode == REQUEST_BACKUP_FOLDER) {
+                int flags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                requireActivity().getContentResolver().takePersistableUriPermission(data.getData(), flags);
+                prefs.edit().putString(AutoBackupScheduler.PREF_TREE_URI, data.getData().toString())
+                        .putBoolean(AutoBackupScheduler.PREF_ENABLED, true).apply();
+                automaticBackup.setOnCheckedChangeListener(null);
+                automaticBackup.setChecked(true);
+                automaticBackup.setOnCheckedChangeListener((button, checked) -> {
+                    if (checked && prefs.getString(AutoBackupScheduler.PREF_TREE_URI, null) == null) {
+                        automaticBackup.setChecked(false);
+                        chooseBackupFolder();
+                        return;
+                    }
+                    prefs.edit().putBoolean(AutoBackupScheduler.PREF_ENABLED, checked).apply();
+                    if (checked) AutoBackupScheduler.enable(requireActivity());
+                    else AutoBackupScheduler.disable(requireActivity());
+                    updateBackupStatus();
+                });
+                AutoBackupScheduler.enable(requireActivity());
+                updateBackupStatus();
+                Toast.makeText(requireActivity(), "Sauvegarde automatique activée.", Toast.LENGTH_SHORT).show();
+            } else if (requestCode == REQUEST_EXPORT) writeExport(data.getData());
             else if (requestCode == REQUEST_IMPORT) readImport(data.getData());
         } catch (Exception e) {
             Toast.makeText(requireActivity(), "Impossible de traiter le fichier.", Toast.LENGTH_LONG).show();

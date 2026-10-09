@@ -53,6 +53,7 @@ public class WeightDatabase extends SQLiteOpenHelper {
         v.put("date", date);
         v.put("weight", weight);
         getWritableDatabase().insertWithOnConflict(TABLE, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+        AutoBackupScheduler.backupIfEnabled(getContext());
     }
 
     public void replaceAll(List<Measurement> measurements) {
@@ -75,10 +76,12 @@ public class WeightDatabase extends SQLiteOpenHelper {
         } finally {
             database.endTransaction();
         }
+        AutoBackupScheduler.backupIfEnabled(getContext());
     }
 
     public void delete(String date) {
         getWritableDatabase().delete(TABLE, "date=?", new String[]{date});
+        AutoBackupScheduler.backupIfEnabled(getContext());
     }
 
     public Measurement get(String date) {
