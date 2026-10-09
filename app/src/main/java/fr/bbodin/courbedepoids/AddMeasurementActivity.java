@@ -39,12 +39,36 @@ public class AddMeasurementActivity extends Activity {
     }
 
     private void updateDate() {
-        dateInput.setText(new SimpleDateFormat("EEEE d MMMM yyyy", Locale.FRANCE).format(date.getTime()));
+        Calendar selected = (Calendar) date.clone();
+        selected.set(Calendar.HOUR_OF_DAY, 0);
+        selected.set(Calendar.MINUTE, 0);
+        selected.set(Calendar.SECOND, 0);
+        selected.set(Calendar.MILLISECOND, 0);
+
         Calendar today = Calendar.getInstance();
-        boolean isToday = date.get(Calendar.YEAR) == today.get(Calendar.YEAR)
-                && date.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR);
-        todayHint.setText(isToday ? "Aujourd'hui" : "Appuyez sur la date pour choisir un autre jour");
-        todayHint.setTextColor(android.graphics.Color.parseColor(isToday ? "#4F46E5" : "#64748B"));
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
+        today.set(Calendar.MILLISECOND, 0);
+
+        String label;
+        if (selected.getTimeInMillis() == today.getTimeInMillis()) {
+            label = "Aujourd'hui";
+        } else {
+            Calendar yesterday = (Calendar) today.clone();
+            yesterday.add(Calendar.DAY_OF_YEAR, -1);
+            Calendar tomorrow = (Calendar) today.clone();
+            tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+            if (selected.getTimeInMillis() == yesterday.getTimeInMillis()) {
+                label = "Hier";
+            } else if (selected.getTimeInMillis() == tomorrow.getTimeInMillis()) {
+                label = "Demain";
+            } else {
+                label = new SimpleDateFormat("EEEE d MMMM yyyy", Locale.FRANCE).format(date.getTime());
+            }
+        }
+        dateInput.setText(label);
+        todayHint.setVisibility(android.view.View.GONE);
     }
 
     private void save() {
