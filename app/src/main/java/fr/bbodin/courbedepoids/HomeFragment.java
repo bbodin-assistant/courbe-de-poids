@@ -20,6 +20,7 @@ public class HomeFragment extends Fragment {
     private WeightDatabase db;
     private WeightChartView chart;
     private WaterChartView waterChart;
+    private SportChartView sportChart;
     private TextView currentWeight, weightChange, periodCaption;
     private int selectedDays = 7;
 
@@ -32,6 +33,7 @@ public class HomeFragment extends Fragment {
         db = new WeightDatabase(getActivity());
         chart = view.findViewById(R.id.weight_chart);
         waterChart = view.findViewById(R.id.water_chart);
+        sportChart = view.findViewById(R.id.sport_chart);
         currentWeight = view.findViewById(R.id.current_weight);
         weightChange = view.findViewById(R.id.weight_change);
         periodCaption = view.findViewById(R.id.weight_period_caption);
@@ -76,6 +78,7 @@ public class HomeFragment extends Fragment {
         if (root == null || db == null) return;
         List<WeightDatabase.Measurement> all = db.all();
         waterChart.setData(db.allWaterEvents(), selectedDays);
+        sportChart.setData(db.allSportEvents(), selectedDays);
         updatePeriodStyles(root);
         if (all.isEmpty()) {
             currentWeight.setText("— kg");

@@ -28,6 +28,7 @@ public final class BackupManager {
             JSONObject item = new JSONObject(); item.put("date", event.date); item.put("amountMl", event.amountMl); item.put("createdAt", event.createdAt); waterEvents.put(item);
         }
         root.put("waterEvents", waterEvents);
+        JSONArray sportEvents=new JSONArray();for(WeightDatabase.SportEvent e:database.allSportEvents()){JSONObject item=new JSONObject();item.put("date",e.date);item.put("type",e.type);item.put("durationMinutes",e.durationMinutes);item.put("distanceKm",e.distanceKm);item.put("createdAt",e.createdAt);sportEvents.put(item);}root.put("sportEvents",sportEvents);
         SharedPreferences preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         JSONObject settings = new JSONObject();
         settings.put("reminderEnabled", preferences.getBoolean("reminder_enabled", false));
@@ -67,10 +68,12 @@ public final class BackupManager {
                 waterEvents.add(new WeightDatabase.WaterEvent(0, date, amount, createdAt));
             }
         }
+        List<WeightDatabase.SportEvent> sportEvents=new ArrayList<>();JSONArray sportArray=root.optJSONArray("sportEvents");if(sportArray!=null)for(int i=0;i<sportArray.length();i++){JSONObject item=sportArray.optJSONObject(i);if(item==null)throw new JSONException("Événement sportif invalide");String date=item.optString("date",""),type=item.optString("type","");int duration=item.optInt("durationMinutes",-1);double distance=item.optDouble("distanceKm",0.0);long createdAt=item.optLong("createdAt",0L);if(!date.matches("\\d{4}-\\d{2}-\\d{2}")||createdAt<0||!WeightDatabase.isValidSport(type,duration,distance))throw new JSONException("Événement sportif invalide");sportEvents.add(new WeightDatabase.SportEvent(0,date,type,duration,distance,createdAt));}
         int hour = settings.optInt("reminderHour", 8), minute = settings.optInt("reminderMinute", 0);
         if (hour < 0 || hour > 23 || minute < 0 || minute > 59) throw new JSONException("Configuration du rappel invalide");
         database.replaceAll(validated);
         database.replaceWaterEvents(waterEvents);
+        database.replaceSportEvents(sportEvents);
         boolean reminderEnabled = settings.optBoolean("reminderEnabled", false);
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("reminder_enabled", reminderEnabled)
                 .putInt("reminder_hour", hour).putInt("reminder_minute", minute).apply();

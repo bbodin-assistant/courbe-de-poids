@@ -5,13 +5,17 @@
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Poids et hydratation" android:textSize="13sp" android:textColor="#EAF4FF"/>
     </LinearLayout>
     <LinearLayout android:layout_width="match_parent" android:layout_height="76dp" android:orientation="horizontal" android:paddingStart="22dp" android:paddingEnd="22dp" android:paddingTop="8dp" android:paddingBottom="8dp" android:background="#F3F7FC">
-        <LinearLayout android:id="@+id/weight_mode_button" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="6dp" android:orientation="horizontal" android:gravity="center" android:background="@drawable/bg_primary_button" android:clickable="true" android:focusable="true" android:contentDescription="Ajouter le poids">
+        <LinearLayout android:id="@+id/weight_mode_button" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginEnd="3dp" android:orientation="horizontal" android:gravity="center" android:background="@drawable/bg_primary_button" android:clickable="true" android:focusable="true" android:contentDescription="Ajouter le poids">
             <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@drawable/ic_scale" android:contentDescription="@null" android:tint="#FFFFFF"/>
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="9dp" android:text="Poids" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold"/>
         </LinearLayout>
-        <LinearLayout android:id="@+id/water_mode_button" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginStart="6dp" android:orientation="horizontal" android:gravity="center" android:background="@drawable/bg_input" android:clickable="true" android:focusable="true" android:contentDescription="Ajouter de l'eau">
+        <LinearLayout android:id="@+id/water_mode_button" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginStart="3dp" android:orientation="horizontal" android:gravity="center" android:background="@drawable/bg_input" android:clickable="true" android:focusable="true" android:contentDescription="Ajouter de l'eau">
             <ImageView android:layout_width="28dp" android:layout_height="28dp" android:src="@drawable/ic_water" android:contentDescription="@null" android:tint="#147BEF"/>
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="9dp" android:text="Eau" android:textColor="#14243A" android:textSize="16sp" android:textStyle="bold"/>
+        </LinearLayout>
+        <LinearLayout android:id="@+id/sport_mode_button" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginStart="3dp" android:orientation="horizontal" android:gravity="center" android:background="@drawable/bg_input" android:clickable="true" android:focusable="true" android:contentDescription="Ajouter une activité sportive">
+            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_sport" android:contentDescription="@null" android:tint="#147BEF"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="5dp" android:text="Sport" android:textColor="#14243A" android:textSize="14sp" android:textStyle="bold"/>
         </LinearLayout>
     </LinearLayout>
     <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
@@ -45,6 +49,20 @@
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="22dp" android:text="Quantité personnalisée (ml)" android:textSize="14sp" android:textColor="#64748B"/>
                 <EditText android:id="@+id/water_custom_input" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="8dp" android:background="@drawable/bg_input" android:gravity="center_vertical" android:paddingStart="14dp" android:paddingEnd="14dp" android:hint="Ex. 200" android:inputType="number" android:textSize="18sp" android:textColor="#14243A"/>
                 <Button android:id="@+id/save_custom_water" android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="12dp" android:background="@drawable/bg_primary_button" android:text="Enregistrer la quantité" android:textAllCaps="false" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold"/>
+            </LinearLayout>
+            <LinearLayout android:id="@+id/sport_form" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:background="@drawable/bg_card" android:elevation="2dp" android:orientation="vertical" android:padding="18dp" android:visibility="gone">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Activité sportive" android:textSize="18sp" android:textStyle="bold" android:textColor="#14243A"/>
+                <RadioGroup android:id="@+id/sport_type_group" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:orientation="vertical">
+                    <RadioButton android:id="@+id/sport_type_yoga" android:layout_width="match_parent" android:layout_height="wrap_content" android:checked="true" android:text="Yoga" android:textColor="#14243A"/>
+                    <RadioButton android:id="@+id/sport_type_run" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Course" android:textColor="#14243A"/>
+                    <RadioButton android:id="@+id/sport_type_climb" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Escalade" android:textColor="#14243A"/>
+                    <RadioButton android:id="@+id/sport_type_workout" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Workout" android:textColor="#14243A"/>
+                </RadioGroup>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Durée (minutes)" android:textColor="#64748B" android:textSize="14sp"/>
+                <EditText android:id="@+id/sport_duration_input" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="6dp" android:background="@drawable/bg_input" android:gravity="center_vertical" android:paddingStart="14dp" android:paddingEnd="14dp" android:hint="Ex. 45" android:inputType="number" android:textSize="18sp" android:textColor="#14243A"/>
+                <TextView android:id="@+id/sport_distance_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Distance (km, facultative)" android:textColor="#64748B" android:textSize="14sp" android:visibility="gone"/>
+                <EditText android:id="@+id/sport_distance_input" android:layout_width="match_parent" android:layout_height="58dp" android:layout_marginTop="6dp" android:background="@drawable/bg_input" android:gravity="center_vertical" android:paddingStart="14dp" android:paddingEnd="14dp" android:hint="Ex. 5,2" android:inputType="numberDecimal" android:textSize="18sp" android:textColor="#14243A" android:visibility="gone"/>
+                <Button android:id="@+id/save_sport" android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="18dp" android:background="@drawable/bg_primary_button" android:text="Enregistrer le sport" android:textAllCaps="false" android:textColor="#FFFFFF" android:textSize="16sp" android:textStyle="bold"/>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

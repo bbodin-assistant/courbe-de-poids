@@ -1,157 +1,22 @@
 package fr.bbodin.courbedepoids;
-
-import android.app.AlertDialog;
-import android.app.Fragment;
-import android.os.Bundle;
-import android.text.InputType;
-import android.graphics.Color;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.widget.Toast;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-
-public class HistoryFragment extends Fragment {
-    private LinearLayout list;
-    private WeightDatabase db;
-
-    private static class HistoryEntry {
-        final String date;
-        final long timestamp;
-        final WeightDatabase.Measurement measurement;
-        final WeightDatabase.WaterEvent water;
-        HistoryEntry(WeightDatabase.Measurement measurement) {
-            this.date = measurement.date; this.timestamp = 0; this.measurement = measurement; this.water = null;
-        }
-        HistoryEntry(WeightDatabase.WaterEvent water) {
-            this.date = water.date; this.timestamp = water.createdAt; this.measurement = null; this.water = water;
-        }
-    }
-
-    @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle state) {
-        return inflater.inflate(R.layout.activity_history, container, false);
-    }
-
-    @Override public void onViewCreated(View view, Bundle state) {
-        super.onViewCreated(view, state);
-        db = new WeightDatabase(getActivity());
-        list = view.findViewById(R.id.history_list);
-        render();
-    }
-
-    @Override public void onResume() { super.onResume(); if (db != null && list != null) render(); }
-
-    private void render() {
-        list.removeAllViews();
-        List<HistoryEntry> entries = new ArrayList<>();
-        for (WeightDatabase.Measurement m : db.all()) entries.add(new HistoryEntry(m));
-        for (WeightDatabase.WaterEvent w : db.allWaterEvents()) entries.add(new HistoryEntry(w));
-        Collections.sort(entries, new Comparator<HistoryEntry>() {
-            @Override public int compare(HistoryEntry a, HistoryEntry b) {
-                int byDate = a.date.compareTo(b.date);
-                return byDate != 0 ? byDate : Long.compare(a.timestamp, b.timestamp);
-            }
-        });
-
-        for (HistoryEntry entry : entries) {
-            LinearLayout row = new LinearLayout(getActivity());
-            row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(dp(14), dp(14), dp(14), dp(14));
-            row.setBackgroundResource(R.drawable.bg_card);
-            row.setClickable(entry.measurement != null || entry.water != null);
-            if (entry.measurement != null) row.setOnClickListener(v -> edit(entry.measurement));
-            else row.setOnClickListener(v -> editWater(entry.water));
-
-            ImageView icon = new ImageView(getActivity());
-            icon.setImageResource(entry.water == null ? R.drawable.ic_calendar : R.drawable.ic_water);
-            icon.setContentDescription(entry.water == null ? "Poids" : "Eau");
-            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(40), dp(40));
-            iconParams.setMarginEnd(dp(14));
-            row.addView(icon, iconParams);
-
-            LinearLayout info = new LinearLayout(getActivity());
-            info.setOrientation(LinearLayout.VERTICAL);
-            info.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-            TextView date = new TextView(getActivity());
-            date.setText(formatDate(entry.date)); date.setTextSize(16); date.setTextColor(Color.rgb(15, 23, 42));
-            date.setTypeface(null, android.graphics.Typeface.BOLD); info.addView(date);
-            TextView detail = new TextView(getActivity());
-            if (entry.measurement != null) {
-                detail.setText(String.format(Locale.FRANCE, "%.1f kg", entry.measurement.weight));
-            } else {
-                detail.setText("Eau · " + formatWater(entry.water.amountMl));
-            }
-            detail.setTextSize(15); detail.setTextColor(Color.rgb(71, 85, 105)); info.addView(detail);
-            row.addView(info);
-            LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);
-            rowParams.bottomMargin = dp(8); list.addView(row, rowParams);
-        }
-        if (entries.isEmpty()) {
-            TextView empty = new TextView(getActivity());
-            empty.setText("Aucune entrée enregistrée."); empty.setTextSize(17);
-            empty.setTextColor(Color.rgb(100, 116, 139)); empty.setGravity(Gravity.CENTER);
-            empty.setPadding(0, dp(48), 0, 0); list.addView(empty);
-        }
-    }
-
-    private void edit(WeightDatabase.Measurement m) {
-        final EditText input = new EditText(getActivity());
-        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        input.setText(String.format(Locale.FRANCE, "%.1f", m.weight));
-        new AlertDialog.Builder(getActivity()).setTitle("Modifier " + m.date).setView(input)
-                .setPositiveButton("Enregistrer", (dialog, which) -> {
-                    try {
-                        double value = Double.parseDouble(input.getText().toString().replace(',', '.'));
-                        if (!WeightDatabase.isValidWeight(value)) throw new IllegalArgumentException();
-                        db.save(m.date, value); render();
-                    } catch (Exception e) {
-                        Toast.makeText(getActivity(), "Poids invalide.", Toast.LENGTH_SHORT).show();
-                    }
-                }).setNegativeButton("Annuler", null).show();
-    }
-
-    private void editWater(WeightDatabase.WaterEvent event) {
-        final EditText input = new EditText(getActivity());
-        input.setInputType(InputType.TYPE_CLASS_NUMBER);
-        input.setHint("Quantité en ml");
-        input.setText(String.valueOf(event.amountMl));
-        new AlertDialog.Builder(getActivity()).setTitle("Modifier l’eau · " + event.date).setView(input)
-                .setPositiveButton("Enregistrer", (dialog, which) -> {
-                    try {
-                        int amount = Integer.parseInt(input.getText().toString().trim());
-                        if (!WeightDatabase.isValidWaterAmount(amount)) throw new IllegalArgumentException();
-                        db.updateWaterEvent(event.id, amount);
-                        render();
-                    } catch (Exception e) {
-                        Toast.makeText(getActivity(), "Quantité invalide (1 à 10 000 ml).", Toast.LENGTH_SHORT).show();
-                    }
-                }).setNegativeButton("Annuler", null).show();
-    }
-
-    private String formatDate(String raw) {
-        try {
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(new SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(raw));
-            return new SimpleDateFormat("EEEE d MMMM yyyy", Locale.FRANCE).format(calendar.getTime());
-        } catch (Exception e) { return raw; }
-    }
-
-    private String formatWater(int ml) {
-        if (ml >= 1000 && ml % 1000 == 0) return (ml / 1000) + " L (" + ml + " ml)";
-        return ml + " ml";
-    }
-
-    private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
+import android.app.AlertDialog;import android.app.Fragment;import android.os.Bundle;import android.text.InputType;import android.graphics.Color;import android.view.Gravity;import android.view.LayoutInflater;import android.view.View;import android.view.ViewGroup;import android.widget.EditText;import android.widget.ImageView;import android.widget.LinearLayout;import android.widget.RadioButton;import android.widget.RadioGroup;import android.widget.TextView;import android.widget.Toast;import java.text.SimpleDateFormat;import java.util.ArrayList;import java.util.Calendar;import java.util.Collections;import java.util.Comparator;import java.util.List;import java.util.Locale;
+public class HistoryFragment extends Fragment{
+ private LinearLayout list;private WeightDatabase db;
+ private static class Entry{String date;long time;WeightDatabase.Measurement m;WeightDatabase.WaterEvent w;WeightDatabase.SportEvent s;Entry(WeightDatabase.Measurement x){date=x.date;time=0;m=x;w=null;s=null;}Entry(WeightDatabase.WaterEvent x){date=x.date;time=x.createdAt;m=null;w=x;s=null;}Entry(WeightDatabase.SportEvent x){date=x.date;time=x.createdAt;m=null;w=null;s=x;}}
+ @Override public View onCreateView(LayoutInflater i,ViewGroup c,Bundle b){return i.inflate(R.layout.activity_history,c,false);}
+ @Override public void onViewCreated(View v,Bundle b){super.onViewCreated(v,b);db=new WeightDatabase(getActivity());list=v.findViewById(R.id.history_list);render();}
+ @Override public void onResume(){super.onResume();if(db!=null&&list!=null)render();}
+ private void render(){list.removeAllViews();List<Entry> es=new ArrayList<>();for(WeightDatabase.Measurement x:db.all())es.add(new Entry(x));for(WeightDatabase.WaterEvent x:db.allWaterEvents())es.add(new Entry(x));for(WeightDatabase.SportEvent x:db.allSportEvents())es.add(new Entry(x));Collections.sort(es,new Comparator<Entry>(){public int compare(Entry a,Entry b){int d=a.date.compareTo(b.date);return d!=0?d:Long.compare(a.time,b.time);}});
+ for(Entry e:es){LinearLayout row=new LinearLayout(getActivity());row.setOrientation(LinearLayout.HORIZONTAL);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(dp(14),dp(14),dp(14),dp(14));row.setBackgroundResource(R.drawable.bg_card);if(e.m!=null)row.setOnClickListener(v->editWeight(e.m));else if(e.w!=null)row.setOnClickListener(v->editWater(e.w));else row.setOnClickListener(v->editSport(e.s));
+ ImageView icon=new ImageView(getActivity());icon.setImageResource(e.m!=null?R.drawable.ic_scale:e.w!=null?R.drawable.ic_water:R.drawable.ic_sport);icon.setContentDescription(e.m!=null?"Poids":e.w!=null?"Eau":"Sport");LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(dp(40),dp(40));ip.setMarginEnd(dp(14));row.addView(icon,ip);
+ LinearLayout info=new LinearLayout(getActivity());info.setOrientation(LinearLayout.VERTICAL);info.setLayoutParams(new LinearLayout.LayoutParams(0,-2,1));TextView date=new TextView(getActivity());date.setText(fmtDate(e.date));date.setTextSize(16);date.setTextColor(Color.rgb(15,23,42));date.setTypeface(null,android.graphics.Typeface.BOLD);info.addView(date);TextView detail=new TextView(getActivity());
+ if(e.m!=null)detail.setText(String.format(Locale.FRANCE,"Poids · %.1f kg",e.m.weight));else if(e.w!=null)detail.setText("Eau · "+fmtWater(e.w.amountMl));else{String t=e.s.type+" · "+e.s.durationMinutes+" min";if(e.s.type.equals("Course")&&e.s.distanceKm>0)t+=String.format(Locale.FRANCE," · %.2f km",e.s.distanceKm);detail.setText(t);}detail.setTextSize(15);detail.setTextColor(Color.rgb(71,85,105));info.addView(detail);row.addView(info);LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-1,-2);rp.bottomMargin=dp(8);list.addView(row,rp);}
+ if(es.isEmpty()){TextView t=new TextView(getActivity());t.setText("Aucune entrée enregistrée.");t.setTextSize(17);t.setTextColor(Color.rgb(100,116,139));t.setGravity(Gravity.CENTER);t.setPadding(0,dp(48),0,0);list.addView(t);}}
+ private void editWeight(WeightDatabase.Measurement m){EditText i=new EditText(getActivity());i.setInputType(InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_FLAG_DECIMAL);i.setText(String.format(Locale.FRANCE,"%.1f",m.weight));new AlertDialog.Builder(getActivity()).setTitle("Modifier "+m.date).setView(i).setPositiveButton("Enregistrer",(d,w)->{try{double n=Double.parseDouble(i.getText().toString().replace(',','.'));if(!WeightDatabase.isValidWeight(n))throw new IllegalArgumentException();db.save(m.date,n);render();}catch(Exception x){Toast.makeText(getActivity(),"Poids invalide.",Toast.LENGTH_SHORT).show();}}).setNegativeButton("Annuler",null).show();}
+ private void editWater(WeightDatabase.WaterEvent e){EditText i=new EditText(getActivity());i.setInputType(InputType.TYPE_CLASS_NUMBER);i.setHint("Quantité en ml");i.setText(String.valueOf(e.amountMl));new AlertDialog.Builder(getActivity()).setTitle("Modifier l’eau · "+e.date).setView(i).setPositiveButton("Enregistrer",(d,w)->{try{int n=Integer.parseInt(i.getText().toString().trim());if(!WeightDatabase.isValidWaterAmount(n))throw new IllegalArgumentException();db.updateWaterEvent(e.id,n);render();}catch(Exception x){Toast.makeText(getActivity(),"Quantité invalide (1 à 10 000 ml).",Toast.LENGTH_SHORT).show();}}).setNegativeButton("Annuler",null).show();}
+ private void editSport(WeightDatabase.SportEvent e){LinearLayout form=new LinearLayout(getActivity());form.setOrientation(LinearLayout.VERTICAL);form.setPadding(dp(20),dp(8),dp(20),0);RadioGroup group=new RadioGroup(getActivity());group.setOrientation(RadioGroup.VERTICAL);int sel=-1;for(String n:new String[]{"Yoga","Course","Escalade","Workout"}){RadioButton b=new RadioButton(getActivity());b.setText(n);b.setId(View.generateViewId());group.addView(b);if(n.equals(e.type))sel=b.getId();}group.check(sel);form.addView(group);EditText duration=new EditText(getActivity());duration.setHint("Durée en minutes");duration.setInputType(InputType.TYPE_CLASS_NUMBER);duration.setText(String.valueOf(e.durationMinutes));form.addView(duration);EditText distance=new EditText(getActivity());distance.setHint("Distance en km (course uniquement)");distance.setInputType(InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_FLAG_DECIMAL);if(e.distanceKm>0)distance.setText(String.valueOf(e.distanceKm));form.addView(distance);
+ new AlertDialog.Builder(getActivity()).setTitle("Modifier le sport · "+e.date).setView(form).setPositiveButton("Enregistrer",(d,w)->{try{RadioButton b=form.findViewById(group.getCheckedRadioButtonId());String type=b.getText().toString();int mins=Integer.parseInt(duration.getText().toString().trim());double km=type.equals("Course")&&!distance.getText().toString().trim().isEmpty()?Double.parseDouble(distance.getText().toString().trim().replace(',','.')):0;if(!WeightDatabase.isValidSport(type,mins,km))throw new IllegalArgumentException();db.updateSportEvent(e.id,type,mins,km);render();}catch(Exception x){Toast.makeText(getActivity(),"Vérifiez la durée et la distance.",Toast.LENGTH_SHORT).show();}}).setNegativeButton("Annuler",null).show();}
+ private String fmtDate(String raw){try{Calendar c=Calendar.getInstance();c.setTime(new SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(raw));return new SimpleDateFormat("EEEE d MMMM yyyy",Locale.FRANCE).format(c.getTime());}catch(Exception e){return raw;}}
+ private String fmtWater(int ml){if(ml>=1000&&ml%1000==0)return ml/1000+" L ("+ml+" ml)";return ml+" ml";}
+ private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
 }
