@@ -26,6 +26,7 @@ public class SettingsActivity extends Activity {
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_settings);
+        BottomNavigation.bind(this);
         db = new WeightDatabase(this);
         prefs = getSharedPreferences("settings", MODE_PRIVATE);
         enabled = findViewById(R.id.reminder_enabled);
