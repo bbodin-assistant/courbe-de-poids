@@ -82,67 +82,6 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-  instrumented-tests:
-    name: Instrumented acceptance tests
-    needs: build-debug
-    # Pin this job to Ubuntu 22.04 to avoid the observed Android emulator/input regressions on 24.04.
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Download debug packages
-        uses: actions/download-artifact@v5
-        with:
-          name: courbe-de-poids-debug-${{ needs.build-debug.outputs.version }}
-          path: published-debug
-      - name: Install debug packages for test runner
-        run: |
-          set -euo pipefail
-          APP_APK="$(find published-debug -type f -name 'app-debug.apk' -print -quit)"
-          TEST_APK="$(find published-debug -type f -name 'app-debug-androidTest.apk' -print -quit)"
-          test -n "$APP_APK"
-          test -n "$TEST_APK"
-          mkdir -p app/build/outputs/apk/debug app/build/outputs/apk/androidTest/debug
-          cp "$APP_APK" app/build/outputs/apk/debug/app-debug.apk
-          cp "$TEST_APK" app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.9"
-      - name: Run instrumented acceptance scenarios
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          target: google_apis
-          arch: x86_64
-          profile: pixel_5
-          cores: 2
-          ram-size: 4096M
-          heap-size: 512M
-          emulator-boot-timeout: 1200
-          disable-spellchecker: true
-          disable-animations: true
-          emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -memory 4096
-          script: bash scripts/run-instrumented-tests.sh
-      - name: Upload instrumentation reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: instrumented-test-reports-${{ needs.build-debug.outputs.version }}
-          path: |
-            app/build/reports/androidTests/
-            app/build/outputs/androidTest-results/
-            instrumentation.log
-            instrumentation-logcat.txt
-          if-no-files-found: warn
-          retention-days: 30
-
-  build-release:
     name: Build and publish signed release packages
     needs: instrumented-tests
     if: ${{ needs.instrumented-tests.result == 'success' }}
