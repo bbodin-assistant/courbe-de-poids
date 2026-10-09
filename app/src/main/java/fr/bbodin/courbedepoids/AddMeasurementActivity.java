@@ -14,7 +14,6 @@ import java.util.Locale;
 
 public class AddMeasurementActivity extends Activity {
     private TextView dateInput;
-    private TextView todayHint;
     private EditText weightInput;
     private final Calendar date = Calendar.getInstance();
 
@@ -23,7 +22,6 @@ public class AddMeasurementActivity extends Activity {
         setContentView(R.layout.activity_add_measurement);
         BottomNavigation.bind(this);
         dateInput = findViewById(R.id.date_input);
-        todayHint = findViewById(R.id.date_today_hint);
         weightInput = findViewById(R.id.weight_input);
 
         updateDate();
@@ -68,7 +66,6 @@ public class AddMeasurementActivity extends Activity {
             }
         }
         dateInput.setText(label);
-        todayHint.setVisibility(android.view.View.GONE);
     }
 
     private void save() {
