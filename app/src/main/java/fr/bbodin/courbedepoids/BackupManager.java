@@ -67,6 +67,7 @@ public final class BackupManager {
                 .putInt("reminder_minute", minute).apply();
         if (reminderEnabled) ReminderScheduler.schedule(context, hour, minute);
         else ReminderScheduler.cancel(context);
+        AutoBackupScheduler.backupIfEnabled(context);
         return validated.size();
     }
 }

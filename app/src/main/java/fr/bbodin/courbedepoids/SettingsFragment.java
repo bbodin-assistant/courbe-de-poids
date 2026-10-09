@@ -68,6 +68,7 @@ public class SettingsFragment extends Fragment {
             prefs.edit().putBoolean("reminder_enabled", checked).apply();
             if (checked) ReminderScheduler.schedule(requireActivity(), prefs.getInt("reminder_hour", 8), prefs.getInt("reminder_minute", 0));
             else ReminderScheduler.cancel(requireActivity());
+            AutoBackupScheduler.backupIfEnabled(requireActivity());
         });
     }
 
@@ -96,6 +97,7 @@ public class SettingsFragment extends Fragment {
             prefs.edit().putInt("reminder_hour", h).putInt("reminder_minute", m).apply();
             updateTimeText();
             if (enabled.isChecked()) ReminderScheduler.schedule(requireActivity(), h, m);
+            AutoBackupScheduler.backupIfEnabled(requireActivity());
         }, prefs.getInt("reminder_hour", 8), prefs.getInt("reminder_minute", 0), true).show();
     }
 
