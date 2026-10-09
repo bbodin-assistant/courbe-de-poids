@@ -2,6 +2,8 @@
 
 Application Android native permettant d'enregistrer et de consulter des mesures de poids.
 
+**[Consulter les builds APK et télécharger le dernier APK debug disponible](https://github.com/bbodin-assistant/courbe-de-poids/actions/workflows/build-apk.yml?query=branch%3Amain)** — ouvrir la dernière exécution réussie, puis télécharger l'artefact `courbe-de-poids-debug-*` dans la section **Artifacts**. Les artefacts sont conservés pendant 30 jours et le téléchargement peut nécessiter une connexion GitHub.
+
 ## Fonctionnalités
 
 - Enregistrer le poids du jour.
@@ -102,25 +104,9 @@ La description détaillée de la validation se trouve dans [`docs/TESTS_VALIDATI
 
 ## CI GitHub Actions
 
-Le workflow [.github/workflows/build-apk.yml](.github/workflows/build-apk.yml) s'exécute sur les pushes vers `main`.
+Le workflow [.github/workflows/build-apk.yml](.github/workflows/build-apk.yml) s'exécute sur les pushes vers `main`. Il valide la version, construit l'APK debug, vérifie sa présence puis le publie comme artefact nommé `courbe-de-poids-debug-<version>`.
 
-La CI ne se base plus sur le message du commit. Le premier job compare la version déclarée dans `app/build.gradle` avec celle du commit parent :
-
-1. si la version n'a pas changé, les jobs de build et de test sont ignorés ;
-2. si la version a changé, l'APK debug est construit avec cette version ;
-3. l'APK est vérifié puis publié comme artefact ;
-4. le job de test télécharge cet artefact ;
-5. l'émulateur Android installe exactement cet APK ;
-6. l'APK des tests instrumentés est construit ;
-7. les scénarios instrumentés sont exécutés contre l'APK publié.
-
-L'artefact de l'application est nommé :
-
-```
-courbe-de-poids-apk-<version>
-```
-
-Les rapports des tests instrumentés sont également publiés comme artefacts.
+Les artefacts sont conservés pendant 30 jours. Les tests instrumentés et la génération de l'APK/AAB release sont temporairement désactivés.
 
 ## Versionnement
 
@@ -136,7 +122,7 @@ Exemples :
 - `0.3-1`
 - `0.3-4`
 
-La CI déclenche le build et les tests lorsqu'elle détecte un changement de cette version entre le commit courant et son parent.
+La CI valide le format de version et vérifie l'incrément du `versionCode` lorsqu'une nouvelle version est déclarée.
 
 ## Licence
 
