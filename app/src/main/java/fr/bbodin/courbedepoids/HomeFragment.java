@@ -198,6 +198,8 @@ public class HomeFragment extends Fragment {
         ChartRange range = ChartRange.from(Calendar.getInstance(), visibleDays, endOffsetDays);
         Calendar rangeStart = range.start;
         Calendar rangeEnd = range.end;
+        List<WeightDatabase.Measurement> period = new ArrayList<>();
+        for (WeightDatabase.Measurement m : all) if (range.contains(m.date)) period.add(m);
         chart.setData(all, range.start, range.end);
         periodCaption.setText(rangeLabel(rangeStart, rangeEnd));
         if (period.size() >= 2) {
