@@ -3,6 +3,8 @@ package fr.bbodin.courbedepoids;
 import android.app.Activity;
 import android.app.TimePickerDialog;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Switch;
@@ -29,6 +31,7 @@ public class SettingsActivity extends Activity {
         BottomNavigation.bind(this);
         db = new WeightDatabase(this);
         prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        populateAboutSection();
         enabled = findViewById(R.id.reminder_enabled);
         time = findViewById(R.id.reminder_time);
         enabled.setChecked(prefs.getBoolean("reminder_enabled", false));
@@ -41,6 +44,23 @@ public class SettingsActivity extends Activity {
             if (checked) ReminderScheduler.schedule(this, prefs.getInt("reminder_hour", 8), prefs.getInt("reminder_minute", 0));
             else ReminderScheduler.cancel(this);
         });
+    }
+
+    private void populateAboutSection() {
+        TextView versionView = findViewById(R.id.app_version);
+        TextView librariesView = findViewById(R.id.app_libraries);
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            String version = info.versionName == null ? "Inconnue" : info.versionName;
+            versionView.setText(version + " (" + info.longVersionCode + ")");
+        } catch (PackageManager.NameNotFoundException e) {
+            versionView.setText("Indisponible");
+        }
+        librariesView.setText("• Android SDK (API minimale 26, cible 35)\\n"
+                + "• Java 17\\n"
+                + "• SQLite (stockage local)\\n"
+                + "• AndroidX Test Runner 1.7.0, Rules 1.7.0, JUnit 1.3.0 et Espresso 3.7.0 (tests uniquement)\\n"
+                + "Aucune bibliothèque tierce d’exécution : l’application utilise les API Android.");
     }
 
     private void updateTimeText() {
