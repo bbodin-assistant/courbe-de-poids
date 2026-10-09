@@ -28,7 +28,7 @@ public class HomeFragment extends Fragment {
 
     @Override public void onViewCreated(View view, Bundle state) {
         super.onViewCreated(view, state);
-        db = new WeightDatabase(requireActivity());
+        db = new WeightDatabase(getActivity());
         chart = view.findViewById(R.id.weight_chart);
         currentWeight = view.findViewById(R.id.current_weight);
         weightChange = view.findViewById(R.id.weight_change);
