@@ -23,6 +23,7 @@ public class HistoryActivity extends Activity {
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_history);
+        BottomNavigation.bind(this);
         db = new WeightDatabase(this);
         list = findViewById(R.id.history_list);
         render();
