@@ -25,18 +25,26 @@ public class SplashActivity extends Activity {
         configureSystemBars();
         setContentView(R.layout.activity_splash);
 
-        Button startButton = findViewById(R.id.start_button);
-        startButton.setOnClickListener(v -> {
-            getSharedPreferences(PREFS, MODE_PRIVATE)
-                    .edit()
-                    .putBoolean(INTRO_SHOWN, true)
-                    .apply();
-            openMain();
+        Button newUserButton = findViewById(R.id.new_user_button);
+        Button existingUserButton = findViewById(R.id.existing_user_button);
+        newUserButton.setOnClickListener(v -> {
+            markIntroShown();
+            openMain(false);
+        });
+        existingUserButton.setOnClickListener(v -> {
+            markIntroShown();
+            openMain(true);
         });
     }
 
-    private void openMain() {
-        startActivity(new Intent(this, MainActivity.class));
+    private void markIntroShown() {
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(INTRO_SHOWN, true).apply();
+    }
+
+    private void openMain(boolean restoreBackup) {
+        Intent intent = new Intent(this, MainActivity.class);
+        if (restoreBackup) intent.putExtra("restore_backup_on_start", true);
+        startActivity(intent);
         finish();
     }
 
