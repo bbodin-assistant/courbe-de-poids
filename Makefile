@@ -6,7 +6,7 @@
 
 GRADLE ?= gradle
 ADB ?= adb
-VERSION_NAME ?= 0.3-14
+VERSION_NAME ?= $(shell sed -n 's/^VERSION_NAME=//p' .env.example | head -n 1)
 ADB_SERIAL ?=
 
 ADB_CMD = $(ADB) $(if $(strip $(ADB_SERIAL)),-s "$(ADB_SERIAL)",)
@@ -27,14 +27,16 @@ help:
 	@echo "Copy .env.example to .env and configure local tools, device, and signing values."
 
 build:
+	@test -n "$(VERSION_NAME)" || (echo "ERROR: Set VERSION_NAME in .env or .env.example"; exit 1)
 	"$(GRADLE)" assembleDebug -PVERSION_NAME="$(VERSION_NAME)"
 
 release:
+	@test -n "$(VERSION_NAME)" || (echo "ERROR: Set VERSION_NAME in .env or .env.example"; exit 1)
 	@test -n "$(RELEASE_KEYSTORE_PATH)" || (echo "ERROR: Set RELEASE_KEYSTORE_PATH in .env"; exit 1)
 	@test -n "$(ANDROID_KEYSTORE_PASSWORD)" || (echo "ERROR: Set ANDROID_KEYSTORE_PASSWORD in .env"; exit 1)
 	@test -n "$(ANDROID_KEY_ALIAS)" || (echo "ERROR: Set ANDROID_KEY_ALIAS in .env"; exit 1)
 	@test -n "$(ANDROID_KEY_PASSWORD)" || (echo "ERROR: Set ANDROID_KEY_PASSWORD in .env"; exit 1)
-	@test -f "$(RELEASE_KEYSTORE_PATH)" || (echo "ERROR: Keystore not found: $(RELEASE_KEYSTORE_PATH) (path is relative to app/ or absolute)"; exit 1)
+	@test -f "$(RELEASE_KEYSTORE_PATH)" || (echo "ERROR: Keystore not found: $(RELEASE_KEYSTORE_PATH) (path is relative to repository root or absolute)"; exit 1)
 	"$(GRADLE)" assembleRelease -PVERSION_NAME="$(VERSION_NAME)"
 	@echo "Release APK: app/build/outputs/apk/release/app-release.apk"
 
