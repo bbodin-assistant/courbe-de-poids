@@ -45,8 +45,8 @@ public class MainActivity extends Activity {
 
     private void configureSystemBars() {
         Window window = getWindow();
-        window.setStatusBarColor(Color.rgb(15, 23, 42));
-        window.setNavigationBarColor(Color.rgb(248, 250, 252));
+        window.setStatusBarColor(Color.rgb(18, 107, 208));
+        window.setNavigationBarColor(Color.rgb(255, 255, 255));
         if (Build.VERSION.SDK_INT >= 26) {
             window.getDecorView().setSystemUiVisibility(
                     window.getDecorView().getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
