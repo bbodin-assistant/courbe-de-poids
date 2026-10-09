@@ -9,6 +9,12 @@
  </LinearLayout>
  <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:background="#F3F7FC" android:clipToPadding="false" android:fillViewport="true">
   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="18dp" android:paddingEnd="18dp" android:paddingTop="16dp" android:paddingBottom="18dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:gravity="center" android:orientation="horizontal">
+     <TextView android:id="@+id/period_7d" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:gravity="center" android:text="7 jours" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold" android:background="@drawable/bg_primary_button" android:clickable="true" android:focusable="true"/>
+     <TextView android:id="@+id/period_30d" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:layout_marginStart="5dp" android:gravity="center" android:text="30 jours" android:textColor="#64748B" android:textSize="12sp" android:background="@drawable/bg_input" android:clickable="true" android:focusable="true"/>
+     <TextView android:id="@+id/period_3m" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:layout_marginStart="5dp" android:gravity="center" android:text="3 mois" android:textColor="#64748B" android:textSize="12sp" android:background="@drawable/bg_input" android:clickable="true" android:focusable="true"/>
+     <TextView android:id="@+id/period_1y" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:layout_marginStart="5dp" android:gravity="center" android:text="1 an" android:textColor="#64748B" android:textSize="12sp" android:background="@drawable/bg_input" android:clickable="true" android:focusable="true"/>
+    </LinearLayout>
    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/bg_card" android:elevation="2dp" android:orientation="vertical" android:padding="18dp">
     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Poids actuel" android:textColor="#64748B" android:textSize="14sp"/>
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal" android:layout_marginTop="4dp">
@@ -31,12 +37,7 @@
     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Évolution du poids" android:textColor="#14243A" android:textSize="19sp" android:textStyle="bold"/>
     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Chaque point correspond à une mesure" android:textColor="#718198" android:textSize="13sp"/>
     <fr.bbodin.courbedepoids.WeightChartView android:id="@+id/weight_chart" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="12dp"/>
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:gravity="center" android:orientation="horizontal">
-     <TextView android:id="@+id/period_7d" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:gravity="center" android:text="7 jours" android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold" android:background="@drawable/bg_primary_button" android:clickable="true" android:focusable="true"/>
-     <TextView android:id="@+id/period_30d" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:layout_marginStart="5dp" android:gravity="center" android:text="30 jours" android:textColor="#64748B" android:textSize="12sp" android:background="@drawable/bg_input" android:clickable="true" android:focusable="true"/>
-     <TextView android:id="@+id/period_3m" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:layout_marginStart="5dp" android:gravity="center" android:text="3 mois" android:textColor="#64748B" android:textSize="12sp" android:background="@drawable/bg_input" android:clickable="true" android:focusable="true"/>
-     <TextView android:id="@+id/period_1y" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:layout_marginStart="5dp" android:gravity="center" android:text="1 an" android:textColor="#64748B" android:textSize="12sp" android:background="@drawable/bg_input" android:clickable="true" android:focusable="true"/>
-    </LinearLayout>
+
    </LinearLayout>
    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:background="@drawable/bg_card" android:elevation="2dp" android:orientation="vertical" android:padding="16dp">
     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Consommation d’eau" android:textColor="#14243A" android:textSize="19sp" android:textStyle="bold"/>
