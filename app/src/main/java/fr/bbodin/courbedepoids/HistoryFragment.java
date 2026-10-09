@@ -29,7 +29,7 @@ public class HistoryFragment extends Fragment {
 
     @Override public void onViewCreated(View view, Bundle state) {
         super.onViewCreated(view, state);
-        db = new WeightDatabase(requireActivity());
+        db = new WeightDatabase(getActivity());
         list = view.findViewById(R.id.history_list);
         render();
     }
@@ -40,7 +40,7 @@ public class HistoryFragment extends Fragment {
         list.removeAllViews();
         List<WeightDatabase.Measurement> measurements = db.all();
         for (WeightDatabase.Measurement m : measurements) {
-            LinearLayout row = new LinearLayout(requireActivity());
+            LinearLayout row = new LinearLayout(getActivity());
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(Gravity.CENTER_VERTICAL);
             row.setPadding(dp(14), dp(14), dp(14), dp(14));
@@ -48,14 +48,14 @@ public class HistoryFragment extends Fragment {
             row.setClickable(true);
             row.setOnClickListener(v -> edit(m));
 
-            ImageView icon = new ImageView(requireActivity());
+            ImageView icon = new ImageView(getActivity());
             icon.setImageResource(R.drawable.ic_calendar);
             icon.setContentDescription("Date");
             LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(40), dp(40));
             iconParams.setMarginEnd(dp(14));
             row.addView(icon, iconParams);
 
-            LinearLayout info = new LinearLayout(requireActivity());
+            LinearLayout info = new LinearLayout(getActivity());
             info.setOrientation(LinearLayout.VERTICAL);
             info.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
             String displayDate;
@@ -65,21 +65,21 @@ public class HistoryFragment extends Fragment {
                 displayDate = new SimpleDateFormat("EEEE d MMMM yyyy", Locale.FRANCE).format(calendar.getTime());
             } catch (Exception e) { displayDate = m.date; }
 
-            TextView date = new TextView(requireActivity());
+            TextView date = new TextView(getActivity());
             date.setText(displayDate); date.setTextSize(16); date.setTextColor(Color.rgb(15, 23, 42));
             date.setTypeface(null, android.graphics.Typeface.BOLD); info.addView(date);
-            TextView weight = new TextView(requireActivity());
+            TextView weight = new TextView(getActivity());
             weight.setText(String.format(Locale.FRANCE, "%.1f kg", m.weight));
             weight.setTextSize(15); weight.setTextColor(Color.rgb(71, 85, 105)); info.addView(weight);
             row.addView(info);
             LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);
             rowParams.bottomMargin = dp(8); list.addView(row, rowParams);
-            View divider = new View(requireActivity());
+            View divider = new View(getActivity());
             divider.setBackgroundColor(Color.rgb(226, 232, 240));
             list.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
         }
         if (measurements.isEmpty()) {
-            TextView empty = new TextView(requireActivity());
+            TextView empty = new TextView(getActivity());
             empty.setText("Aucune mesure enregistrée."); empty.setTextSize(17);
             empty.setTextColor(Color.rgb(100, 116, 139)); empty.setGravity(Gravity.CENTER);
             empty.setPadding(0, dp(48), 0, 0); list.addView(empty);
@@ -87,17 +87,17 @@ public class HistoryFragment extends Fragment {
     }
 
     private void edit(WeightDatabase.Measurement m) {
-        final EditText input = new EditText(requireActivity());
+        final EditText input = new EditText(getActivity());
         input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         input.setText(String.format(Locale.FRANCE, "%.1f", m.weight));
-        new AlertDialog.Builder(requireActivity()).setTitle("Modifier " + m.date).setView(input)
+        new AlertDialog.Builder(getActivity()).setTitle("Modifier " + m.date).setView(input)
                 .setPositiveButton("Enregistrer", (dialog, which) -> {
                     try {
                         double value = Double.parseDouble(input.getText().toString().replace(',', '.'));
                         if (!WeightDatabase.isValidWeight(value)) throw new IllegalArgumentException();
                         db.save(m.date, value); render();
                     } catch (Exception e) {
-                        Toast.makeText(requireActivity(), "Poids invalide.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getActivity(), "Poids invalide.", Toast.LENGTH_SHORT).show();
                     }
                 }).setNegativeButton("Annuler", null).show();
     }
