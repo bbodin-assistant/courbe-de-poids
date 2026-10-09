@@ -19,6 +19,7 @@ import java.util.Locale;
 public class HomeFragment extends Fragment {
     private WeightDatabase db;
     private WeightChartView chart;
+    private WaterChartView waterChart;
     private TextView currentWeight, weightChange, periodCaption;
     private int selectedDays = 7;
 
@@ -30,6 +31,7 @@ public class HomeFragment extends Fragment {
         super.onViewCreated(view, state);
         db = new WeightDatabase(getActivity());
         chart = view.findViewById(R.id.weight_chart);
+        waterChart = view.findViewById(R.id.water_chart);
         currentWeight = view.findViewById(R.id.current_weight);
         weightChange = view.findViewById(R.id.weight_change);
         periodCaption = view.findViewById(R.id.weight_period_caption);
@@ -73,13 +75,14 @@ public class HomeFragment extends Fragment {
         View root = getView();
         if (root == null || db == null) return;
         List<WeightDatabase.Measurement> all = db.all();
+        waterChart.setData(db.allWaterEvents(), selectedDays);
+        updatePeriodStyles(root);
         if (all.isEmpty()) {
             currentWeight.setText("— kg");
             weightChange.setText("Aucune variation");
             weightChange.setTextColor(Color.GRAY);
             chart.setData(all);
             periodCaption.setText("Aucune mesure enregistrée");
-            updatePeriodStyles(root);
             return;
         }
         WeightDatabase.Measurement latest = all.get(all.size() - 1);
@@ -101,7 +104,6 @@ public class HomeFragment extends Fragment {
             weightChange.setText("Pas assez de mesures");
             weightChange.setTextColor(Color.rgb(100, 116, 139));
         }
-        updatePeriodStyles(root);
     }
 
     private String periodLabel() {

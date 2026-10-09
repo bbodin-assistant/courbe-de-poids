@@ -84,6 +84,15 @@ public class WeightDatabase extends SQLiteOpenHelper {
         return result;
     }
 
+    public void updateWaterEvent(long id, int amountMl) {
+        if (!isValidWaterAmount(amountMl)) throw new IllegalArgumentException("Invalid water amount");
+        ContentValues values = new ContentValues();
+        values.put("amount_ml", amountMl);
+        int updated = getWritableDatabase().update(WATER_TABLE, values, "_id=?", new String[]{String.valueOf(id)});
+        if (updated == 0) throw new IllegalArgumentException("Water event not found");
+        AutoBackupScheduler.backupIfEnabled(context);
+    }
+
     public int totalWaterForDate(String date) {
         Cursor c = getReadableDatabase().rawQuery("SELECT COALESCE(SUM(amount_ml), 0) FROM " + WATER_TABLE + " WHERE date=?", new String[]{date});
         try { return c.moveToFirst() ? c.getInt(0) : 0; } finally { c.close(); }

@@ -28,6 +28,11 @@
      <TextView android:id="@+id/period_1y" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:layout_marginStart="5dp" android:gravity="center" android:text="1 an" android:textColor="#64748B" android:textSize="12sp" android:background="@drawable/bg_input" android:clickable="true" android:focusable="true"/>
     </LinearLayout>
    </LinearLayout>
+   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:background="@drawable/bg_card" android:elevation="2dp" android:orientation="vertical" android:padding="16dp">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Consommation d’eau" android:textColor="#14243A" android:textSize="19sp" android:textStyle="bold"/>
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Quantité totale bue par jour" android:textColor="#718198" android:textSize="13sp"/>
+    <fr.bbodin.courbedepoids.WaterChartView android:id="@+id/water_chart" android:layout_width="match_parent" android:layout_height="220dp" android:layout_marginTop="12dp"/>
+   </LinearLayout>
   </LinearLayout>
  </ScrollView>
 </LinearLayout>
