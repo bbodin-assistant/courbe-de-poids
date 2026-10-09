@@ -18,7 +18,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;\nimport org.json.JSONObject;
+import java.util.Locale;
+import org.json.JSONObject;
 
 public class SettingsFragment extends Fragment {
     private static final int REQUEST_EXPORT = 2001;
