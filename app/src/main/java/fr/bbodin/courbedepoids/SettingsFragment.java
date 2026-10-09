@@ -38,8 +38,8 @@ public class SettingsFragment extends Fragment {
 
     @Override public void onViewCreated(View view, Bundle state) {
         super.onViewCreated(view, state);
-        db = new WeightDatabase(requireActivity());
-        prefs = requireActivity().getSharedPreferences("settings", android.content.Context.MODE_PRIVATE);
+        db = new WeightDatabase(getActivity());
+        prefs = getActivity().getSharedPreferences("settings", android.content.Context.MODE_PRIVATE);
         populateAboutSection(view);
         enabled = view.findViewById(R.id.reminder_enabled);
         time = view.findViewById(R.id.reminder_time);
@@ -60,15 +60,15 @@ public class SettingsFragment extends Fragment {
                 return;
             }
             prefs.edit().putBoolean(AutoBackupScheduler.PREF_ENABLED, checked).apply();
-            if (checked) AutoBackupScheduler.enable(requireActivity());
-            else AutoBackupScheduler.disable(requireActivity());
+            if (checked) AutoBackupScheduler.enable(getActivity());
+            else AutoBackupScheduler.disable(getActivity());
             updateBackupStatus();
         });
         enabled.setOnCheckedChangeListener((button, checked) -> {
             prefs.edit().putBoolean("reminder_enabled", checked).apply();
-            if (checked) ReminderScheduler.schedule(requireActivity(), prefs.getInt("reminder_hour", 8), prefs.getInt("reminder_minute", 0));
-            else ReminderScheduler.cancel(requireActivity());
-            AutoBackupScheduler.backupIfEnabled(requireActivity());
+            if (checked) ReminderScheduler.schedule(getActivity(), prefs.getInt("reminder_hour", 8), prefs.getInt("reminder_minute", 0));
+            else ReminderScheduler.cancel(getActivity());
+            AutoBackupScheduler.backupIfEnabled(getActivity());
         });
     }
 
@@ -76,7 +76,7 @@ public class SettingsFragment extends Fragment {
         TextView versionView = root.findViewById(R.id.app_version);
         TextView librariesView = root.findViewById(R.id.app_libraries);
         try {
-            PackageInfo info = requireActivity().getPackageManager().getPackageInfo(requireActivity().getPackageName(), 0);
+            PackageInfo info = getActivity().getPackageManager().getPackageInfo(getActivity().getPackageName(), 0);
             String version = info.versionName == null ? "Inconnue" : info.versionName;
             versionView.setText(version + " (" + info.versionCode + ")");
         } catch (PackageManager.NameNotFoundException e) { versionView.setText("Indisponible"); }
@@ -93,11 +93,11 @@ public class SettingsFragment extends Fragment {
     }
 
     private void pickTime() {
-        new TimePickerDialog(requireActivity(), (v, h, m) -> {
+        new TimePickerDialog(getActivity(), (v, h, m) -> {
             prefs.edit().putInt("reminder_hour", h).putInt("reminder_minute", m).apply();
             updateTimeText();
-            if (enabled.isChecked()) ReminderScheduler.schedule(requireActivity(), h, m);
-            AutoBackupScheduler.backupIfEnabled(requireActivity());
+            if (enabled.isChecked()) ReminderScheduler.schedule(getActivity(), h, m);
+            AutoBackupScheduler.backupIfEnabled(getActivity());
         }, prefs.getInt("reminder_hour", 8), prefs.getInt("reminder_minute", 0), true).show();
     }
 
@@ -144,7 +144,7 @@ public class SettingsFragment extends Fragment {
         try {
             if (requestCode == REQUEST_BACKUP_FOLDER) {
                 int flags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                requireActivity().getContentResolver().takePersistableUriPermission(data.getData(), flags);
+                getActivity().getContentResolver().takePersistableUriPermission(data.getData(), flags);
                 prefs.edit().putString(AutoBackupScheduler.PREF_TREE_URI, data.getData().toString())
                         .putBoolean(AutoBackupScheduler.PREF_ENABLED, true).apply();
                 automaticBackup.setOnCheckedChangeListener(null);
@@ -156,42 +156,42 @@ public class SettingsFragment extends Fragment {
                         return;
                     }
                     prefs.edit().putBoolean(AutoBackupScheduler.PREF_ENABLED, checked).apply();
-                    if (checked) AutoBackupScheduler.enable(requireActivity());
-                    else AutoBackupScheduler.disable(requireActivity());
+                    if (checked) AutoBackupScheduler.enable(getActivity());
+                    else AutoBackupScheduler.disable(getActivity());
                     updateBackupStatus();
                 });
-                AutoBackupScheduler.enable(requireActivity());
+                AutoBackupScheduler.enable(getActivity());
                 updateBackupStatus();
-                Toast.makeText(requireActivity(), "Sauvegarde automatique activée.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), "Sauvegarde automatique activée.", Toast.LENGTH_SHORT).show();
             } else if (requestCode == REQUEST_EXPORT) writeExport(data.getData());
             else if (requestCode == REQUEST_IMPORT) readImport(data.getData());
         } catch (Exception e) {
-            Toast.makeText(requireActivity(), "Impossible de traiter le fichier.", Toast.LENGTH_LONG).show();
+            Toast.makeText(getActivity(), "Impossible de traiter le fichier.", Toast.LENGTH_LONG).show();
         }
     }
 
     private void writeExport(Uri uri) throws Exception {
-        JSONObject backup = BackupManager.createBackup(requireActivity(), db);
-        try (OutputStream out = requireActivity().getContentResolver().openOutputStream(uri)) {
+        JSONObject backup = BackupManager.createBackup(getActivity(), db);
+        try (OutputStream out = getActivity().getContentResolver().openOutputStream(uri)) {
             if (out == null) throw new IllegalStateException("No output stream");
             out.write((backup.toString(2) + "\n").getBytes(StandardCharsets.UTF_8));
         }
-        Toast.makeText(requireActivity(), "Sauvegarde créée.", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(), "Sauvegarde créée.", Toast.LENGTH_SHORT).show();
     }
 
     private void readImport(Uri uri) throws Exception {
         StringBuilder json = new StringBuilder();
-        try (InputStream in = requireActivity().getContentResolver().openInputStream(uri)) {
+        try (InputStream in = getActivity().getContentResolver().openInputStream(uri)) {
             if (in == null) throw new IllegalStateException("No input stream");
             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             String line;
             while ((line = reader.readLine()) != null) json.append(line);
         }
-        int restored = BackupManager.restoreBackup(requireActivity(), db, new JSONObject(json.toString()));
-        enabled.setChecked(requireActivity().getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+        int restored = BackupManager.restoreBackup(getActivity(), db, new JSONObject(json.toString()));
+        enabled.setChecked(getActivity().getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
                 .getBoolean("reminder_enabled", false));
         updateTimeText();
-        Toast.makeText(requireActivity(), "Sauvegarde restaurée : " + restored + " mesure(s).", Toast.LENGTH_LONG).show();
+        Toast.makeText(getActivity(), "Sauvegarde restaurée : " + restored + " mesure(s).", Toast.LENGTH_LONG).show();
     }
 
 }
