@@ -37,6 +37,8 @@ public final class BottomNavigation {
             Intent intent = new Intent(activity, target);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             activity.startActivity(intent);
+            // Keep the bottom navigation visually fixed when switching screens.
+            activity.overridePendingTransition(0, 0);
         });
     }
 }
