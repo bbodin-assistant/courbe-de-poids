@@ -52,7 +52,7 @@ public class SettingsActivity extends Activity {
         try {
             PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
             String version = info.versionName == null ? "Inconnue" : info.versionName;
-            versionView.setText(version + " (" + info.longVersionCode + ")");
+            versionView.setText(version + " (" + info.versionCode + ")");
         } catch (PackageManager.NameNotFoundException e) {
             versionView.setText("Indisponible");
         }
