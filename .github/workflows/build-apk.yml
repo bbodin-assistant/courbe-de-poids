@@ -5,7 +5,7 @@ on:
     branches: ["main"]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   version-validation:
@@ -39,7 +39,7 @@ jobs:
           fi
 
   build-debug:
-    name: Build and publish debug APKs
+    name: Build and publish debug APK
     needs: version-validation
     runs-on: ubuntu-latest
     outputs:
@@ -63,20 +63,27 @@ jobs:
           version="$(grep -E 'configuredVersionName' app/build.gradle | grep -oE '[0-9]+\.[0-9]+(-[0-9]+)?' | tail -n 1)"
           test -n "$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Build debug APK and instrumentation test APK
+      - name: Build debug APK
         env:
           VERSION_NAME: ${{ steps.version.outputs.version }}
         run: gradle assembleDebug -PVERSION_NAME="$VERSION_NAME" --stacktrace
-      - name: Verify debug packages
-        run: |
-          set -euo pipefail
-          test -s app/build/outputs/apk/debug/app-debug.apk
-      - name: Publish debug packages
+      - name: Verify debug APK
+        run: test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Publish debug APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: courbe-de-poids-debug-${{ steps.version.outputs.version }}
-          path: |
-            app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
-
+      - name: Update direct-download prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-debug
+          target_commitish: main
+          name: Dernier APK debug
+          body: APK debug le plus récent généré automatiquement depuis la branche main. Ce téléchargement est distinct de l'APK/AAB release signé.
+          prerelease: true
+          make_latest: false
+          files: app/build/outputs/apk/debug/app-debug.apk
+          overwrite_files: true
