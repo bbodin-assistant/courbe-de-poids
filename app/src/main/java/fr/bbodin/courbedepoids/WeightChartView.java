@@ -48,9 +48,17 @@ public class WeightChartView extends View {
         int forecastEndDay=lastDay==Integer.MIN_VALUE?endDay:Math.min(endDay,lastDay+ChartRange.PREDICTION_DAYS);
         List<Point> points=new ArrayList<>();
         double min=Double.MAX_VALUE,max=-Double.MAX_VALUE;
-        for(WeightDatabase.Measurement m:data){
+        int firstVisible=data.size(), lastVisible=-1;
+        for(int i=0;i<data.size();i++){
+            int d=day(data.get(i).date);
+            if(d!=Integer.MIN_VALUE&&d>=startDay&&d<=endDay){firstVisible=Math.min(firstVisible,i);lastVisible=i;}
+        }
+        int from=firstVisible==data.size()?0:Math.max(0,firstVisible-1);
+        int to=lastVisible<0?data.size()-1:Math.min(data.size()-1,lastVisible+1);
+        for(int i=from;i<=to;i++){
+            WeightDatabase.Measurement m=data.get(i);
             int d=day(m.date);
-            if(d==Integer.MIN_VALUE||d<startDay-14||d>endDay+14)continue;
+            if(d==Integer.MIN_VALUE)continue;
             Point p=new Point(d,m.weight,m.date);
             points.add(p);min=Math.min(min,p.weight);max=Math.max(max,p.weight);
         }
