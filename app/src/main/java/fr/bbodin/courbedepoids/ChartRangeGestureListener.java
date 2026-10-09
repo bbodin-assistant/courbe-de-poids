@@ -4,8 +4,8 @@ public final class ChartRangeGestureListener implements View.OnTouchListener{
  public interface Listener{void onRangeChanged(int days,int offset);}
  private final View v;private final Listener l;private int days,offset;private float x,y,span,anchor,rem;private boolean pinch;
  public ChartRangeGestureListener(View v,int d,int o,Listener l){this.v=v;days=d;offset=o;this.l=l;}
- public void setRange(int d,int o){days=Math.max(3,Math.min(3650,d));offset=Math.max(-3650,Math.min(36500,o));}
- private void send(int d,int o){d=Math.max(3,Math.min(3650,d));o=Math.max(-3650,Math.min(36500,o));if(d==days&&o==offset)return;days=d;offset=o;l.onRangeChanged(d,o);}
+ public void setRange(int d,int o){days=ChartRange.clampVisibleDays(d);offset=ChartRange.clampEndOffsetDays(o);}
+ private void send(int d,int o){d=ChartRange.clampVisibleDays(d);o=ChartRange.clampEndOffsetDays(o);if(d==days&&o==offset)return;days=d;offset=o;l.onRangeChanged(d,o);}
  private void block(){if(v.getParent()!=null)v.getParent().requestDisallowInterceptTouchEvent(true);}
  @Override public boolean onTouch(View a,MotionEvent e){int k=e.getActionMasked();
  if(k==0){x=e.getX();y=e.getY();pinch=false;rem=0;return true;}

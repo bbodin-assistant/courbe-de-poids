@@ -170,6 +170,8 @@ public class HomeFragment extends Fragment {
         List<WeightDatabase.Measurement> all = db.all();
         List<WeightDatabase.WaterEvent> waterEvents = db.allWaterEvents();
         List<WeightDatabase.SportEvent> sportEvents = db.allSportEvents();
+        visibleDays = ChartRange.clampVisibleDays(visibleDays);
+        endOffsetDays = ChartRange.clampEndOffsetDays(endOffsetDays);
         waterChart.setData(waterEvents, visibleDays, endOffsetDays);
         sportChart.setData(sportEvents, visibleDays, endOffsetDays);
         overviewChart.setData(all, waterEvents, sportEvents, visibleDays, endOffsetDays);
@@ -185,12 +187,11 @@ public class HomeFragment extends Fragment {
         }
         WeightDatabase.Measurement latest = all.get(all.size() - 1);
         currentWeight.setText(format(latest.weight) + " kg");
-        Calendar rangeEnd = Calendar.getInstance(); clearTime(rangeEnd); rangeEnd.add(Calendar.DAY_OF_YEAR, -endOffsetDays);
-        Calendar rangeStart = (Calendar) rangeEnd.clone(); rangeStart.add(Calendar.DAY_OF_YEAR, -(visibleDays - 1));
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-        String startDate = dateFormat.format(rangeStart.getTime()), endDate = dateFormat.format(rangeEnd.getTime());
+        ChartRange range = ChartRange.from(Calendar.getInstance(), visibleDays, endOffsetDays);
+        Calendar rangeStart = range.start;
+        Calendar rangeEnd = range.end;
         List<WeightDatabase.Measurement> period = new ArrayList<>();
-        for (WeightDatabase.Measurement m : all) if (m.date.compareTo(startDate) >= 0 && m.date.compareTo(endDate) <= 0) period.add(m);
+        for (WeightDatabase.Measurement m : all) if (range.contains(m.date)) period.add(m);
         chart.setData(period);
         periodCaption.setText(rangeLabel(rangeStart, rangeEnd));
         if (period.size() >= 2) {

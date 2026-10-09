@@ -23,7 +23,7 @@ android {
         applicationId 'fr.bbodin.courbedepoids'
         minSdk 26
         targetSdk 35
-        versionCode 27
+        versionCode 28
         versionName configuredVersionName
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
@@ -59,6 +59,7 @@ android {
 
 dependencies {
     implementation 'androidx.work:work-runtime:2.10.1'
+    testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test:runner:1.7.0'
     androidTestImplementation 'androidx.test:rules:1.7.0'
     androidTestImplementation 'androidx.test.ext:junit:1.3.0'

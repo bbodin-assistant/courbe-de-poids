@@ -71,6 +71,10 @@ jobs:
         env:
           VERSION_NAME: ${{ steps.version.outputs.version }}
         run: gradle assembleDebug -PVERSION_NAME="$VERSION_NAME" --stacktrace
+      - name: Run local unit tests (no emulator)
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version }}
+        run: gradle testDebugUnitTest -PVERSION_NAME="$VERSION_NAME" --stacktrace
       - name: Verify debug APK
         run: test -s app/build/outputs/apk/debug/app-debug.apk
       - name: Publish debug APK artifact
