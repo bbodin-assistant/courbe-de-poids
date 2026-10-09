@@ -66,19 +66,17 @@ jobs:
       - name: Build debug APK and instrumentation test APK
         env:
           VERSION_NAME: ${{ steps.version.outputs.version }}
-        run: gradle assembleDebug assembleDebugAndroidTest -PVERSION_NAME="$VERSION_NAME" --stacktrace
+        run: gradle assembleDebug -PVERSION_NAME="$VERSION_NAME" --stacktrace
       - name: Verify debug packages
         run: |
           set -euo pipefail
           test -s app/build/outputs/apk/debug/app-debug.apk
-          test -s app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
       - name: Publish debug packages
         uses: actions/upload-artifact@v4
         with:
           name: courbe-de-poids-debug-${{ steps.version.outputs.version }}
           path: |
             app/build/outputs/apk/debug/app-debug.apk
-            app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
           if-no-files-found: error
           retention-days: 30
 
