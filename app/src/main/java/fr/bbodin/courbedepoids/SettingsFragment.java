@@ -18,7 +18,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
+import java.util.Locale;\nimport org.json.JSONObject;
 
 public class SettingsFragment extends Fragment {
     private static final int REQUEST_EXPORT = 2001;
@@ -90,7 +90,7 @@ public class SettingsFragment extends Fragment {
     private void importData() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("text/*");
+        intent.setType("application/json");
         startActivityForResult(intent, REQUEST_IMPORT);
     }
 
@@ -106,39 +106,27 @@ public class SettingsFragment extends Fragment {
     }
 
     private void writeExport(Uri uri) throws Exception {
+        JSONObject backup = BackupManager.createBackup(requireActivity(), db);
         try (OutputStream out = requireActivity().getContentResolver().openOutputStream(uri)) {
             if (out == null) throw new IllegalStateException("No output stream");
-            out.write("date,weight_kg\n".getBytes(StandardCharsets.UTF_8));
-            for (WeightDatabase.Measurement m : db.all()) {
-                out.write((m.date + "," + String.format(Locale.US, "%.2f", m.weight) + "\n").getBytes(StandardCharsets.UTF_8));
-            }
+            out.write((backup.toString(2) + "\n").getBytes(StandardCharsets.UTF_8));
         }
-        Toast.makeText(requireActivity(), "Export terminé.", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireActivity(), "Sauvegarde créée.", Toast.LENGTH_SHORT).show();
     }
 
     private void readImport(Uri uri) throws Exception {
-        int imported = 0;
+        StringBuilder json = new StringBuilder();
         try (InputStream in = requireActivity().getContentResolver().openInputStream(uri)) {
             if (in == null) throw new IllegalStateException("No input stream");
             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             String line;
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if (line.isEmpty() || line.toLowerCase(Locale.ROOT).startsWith("date,")) continue;
-                String[] columns = line.split(",");
-                if (columns.length < 2) continue;
-                Double weight = parseWeight(columns[1]);
-                if (columns[0].matches("\\d{4}-\\d{2}-\\d{2}") && WeightDatabase.isValidWeight(weight)) {
-                    db.save(columns[0], weight);
-                    imported++;
-                }
-            }
+            while ((line = reader.readLine()) != null) json.append(line);
         }
-        Toast.makeText(requireActivity(), imported + " mesure(s) importée(s).", Toast.LENGTH_SHORT).show();
+        int restored = BackupManager.restoreBackup(requireActivity(), db, new JSONObject(json.toString()));
+        enabled.setChecked(requireActivity().getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+                .getBoolean("reminder_enabled", false));
+        updateTimeText();
+        Toast.makeText(requireActivity(), "Sauvegarde restaurée : " + restored + " mesure(s).", Toast.LENGTH_LONG).show();
     }
 
-    private Double parseWeight(String value) {
-        try { return Double.parseDouble(value.trim().replace(',', '.')); }
-        catch (Exception e) { return null; }
-    }
 }

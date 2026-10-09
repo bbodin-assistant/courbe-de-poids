@@ -55,6 +55,28 @@ public class WeightDatabase extends SQLiteOpenHelper {
         getWritableDatabase().insertWithOnConflict(TABLE, null, v, SQLiteDatabase.CONFLICT_REPLACE);
     }
 
+    public void replaceAll(List<Measurement> measurements) {
+        SQLiteDatabase database = getWritableDatabase();
+        database.beginTransaction();
+        try {
+            database.delete(TABLE, null, null);
+            for (Measurement measurement : measurements) {
+                if (measurement == null || !isValidWeight(measurement.weight)
+                        || measurement.date == null
+                        || !measurement.date.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                    throw new IllegalArgumentException("Invalid measurement");
+                }
+                ContentValues values = new ContentValues();
+                values.put("date", measurement.date);
+                values.put("weight", measurement.weight);
+                database.insertOrThrow(TABLE, null, values);
+            }
+            database.setTransactionSuccessful();
+        } finally {
+            database.endTransaction();
+        }
+    }
+
     public void delete(String date) {
         getWritableDatabase().delete(TABLE, "date=?", new String[]{date});
     }
