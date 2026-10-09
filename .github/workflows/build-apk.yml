@@ -22,15 +22,19 @@ jobs:
           current_name="$(grep -E '^VERSION_NAME=' .env.default | head -n 1 | cut -d= -f2-)"
           current_code="$(grep -E '^[[:space:]]*versionCode[[:space:]]' app/build.gradle | grep -oE '[0-9]+' | head -n 1)"
           test -n "$current_name" && test -n "$current_code"
-          printf '%s\n' "$current_name" | grep -qE '^[0-9]+\.[0-9]+(-[0-9]+)?$'
+          printf '%s\n' "$current_name" | grep -qE '^[0-9]+\.[0-9]+(\.[0-9]+)?(-[0-9]+)?$'
           test "$current_code" -ge 1
           previous_name="$(git show HEAD^:.env.default 2>/dev/null | grep -E '^VERSION_NAME=' | head -n 1 | cut -d= -f2- || true)"
           previous_code="$(git show HEAD^:app/build.gradle 2>/dev/null | grep -E '^[[:space:]]*versionCode[[:space:]]' | grep -oE '[0-9]+' | head -n 1 || true)"
           echo "Version courante : $current_name (code $current_code)"
           echo "Version précédente : $previous_name (code $previous_code)"
           if [ -n "$previous_name" ] && [ "$current_name" != "$previous_name" ]; then
-            if [ -z "$previous_code" ] || [ "$current_code" -le "$previous_code" ]; then
-              echo "Une nouvelle versionName doit avoir un versionCode strictement supérieur."
+            current_base="${current_name%%-*}"
+            previous_base="${previous_name%%-*}"
+            if [ "$current_base" = "$previous_base" ] && [ "$current_name" = "$current_base" ] && [ "$previous_name" = "$current_base-$previous_code" ] && [ "$current_code" = "$previous_code" ]; then
+              echo "Normalisation du nom de version vers $current_base sans modifier le versionCode Android."
+            elif [ -z "$previous_code" ] || [ "$current_code" -le "$previous_code" ]; then
+              echo "Une nouvelle versionName doit avoir un versionCode strictement supérieur, sauf normalisation du suffixe Android existant."
               exit 1
             fi
           elif [ -n "$previous_name" ] && [ -n "$previous_code" ] && [ "$current_code" != "$previous_code" ]; then
