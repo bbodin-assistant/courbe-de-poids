@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="72dp" android:background="#FFFFFF" android:elevation="10dp" android:gravity="center" android:orientation="horizontal" android:paddingTop="3dp" android:paddingBottom="3dp">
+ <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+  <ImageButton android:id="@+id/home_button" android:layout_width="44dp" android:layout_height="38dp" android:background="?android:attr/selectableItemBackgroundBorderless" android:contentDescription="Accueil" android:padding="9dp" android:src="@drawable/ic_home" android:tint="#64748B"/>
+  <TextView android:id="@+id/nav_label_home" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Accueil" android:textColor="#64748B" android:textSize="10sp"/>
+ </LinearLayout>
+ <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+  <ImageButton android:id="@+id/add_button" android:layout_width="44dp" android:layout_height="38dp" android:background="?android:attr/selectableItemBackgroundBorderless" android:contentDescription="Ajouter une mesure" android:padding="9dp" android:src="@drawable/ic_add" android:tint="#64748B"/>
+  <TextView android:id="@+id/nav_label_add" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ajouter" android:textColor="#64748B" android:textSize="10sp"/>
+ </LinearLayout>
+ <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+  <ImageButton android:id="@+id/history_button" android:layout_width="44dp" android:layout_height="38dp" android:background="?android:attr/selectableItemBackgroundBorderless" android:contentDescription="Historique" android:padding="9dp" android:src="@drawable/ic_history" android:tint="#64748B"/>
+  <TextView android:id="@+id/nav_label_history" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Historique" android:textColor="#64748B" android:textSize="10sp"/>
+ </LinearLayout>
+ <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+  <ImageButton android:id="@+id/settings_button" android:layout_width="44dp" android:layout_height="38dp" android:background="?android:attr/selectableItemBackgroundBorderless" android:contentDescription="Paramètres" android:padding="9dp" android:src="@drawable/ic_settings" android:tint="#64748B"/>
+  <TextView android:id="@+id/nav_label_settings" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Réglages" android:textColor="#64748B" android:textSize="10sp"/>
+ </LinearLayout>
+</LinearLayout>
