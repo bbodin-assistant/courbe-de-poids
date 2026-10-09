@@ -85,7 +85,8 @@ jobs:
   instrumented-tests:
     name: Instrumented acceptance tests
     needs: build-debug
-    runs-on: ubuntu-latest
+    # Pin this job to Ubuntu 22.04 to avoid the observed Android emulator/input regressions on 24.04.
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
