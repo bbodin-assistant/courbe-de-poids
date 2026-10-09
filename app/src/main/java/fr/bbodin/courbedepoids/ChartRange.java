@@ -66,7 +66,6 @@ final class ChartRange {
     }
     static String format(Calendar value) {
         SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-        fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
         return fmt.format(value.getTime());
     }
     private static void clearTime(Calendar c) {
