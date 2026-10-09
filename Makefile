@@ -1,12 +1,11 @@
 # Local Android build, test, install, and release shortcuts.
 # Requirements: JDK 17, Android SDK, Gradle 8.9, and a device/emulator for instrumented tests.
 
--include .env
+-include .env.default .env
 .EXPORT_ALL_VARIABLES:
 
 GRADLE ?= gradle
 ADB ?= adb
-VERSION_NAME ?= $(shell sed -n 's/^VERSION_NAME=//p' .env.example | head -n 1)
 ADB_SERIAL ?=
 
 ADB_CMD = $(ADB) $(if $(strip $(ADB_SERIAL)),-s "$(ADB_SERIAL)",)
@@ -24,14 +23,14 @@ help:
 	@echo "  make clean              Remove generated build files"
 	@echo "  make help               Show this help"
 	@echo ""
-	@echo "Copy .env.example to .env and configure local tools, device, and signing values."
+	@echo "Values in .env override the defaults in .env.default."
 
 build:
-	@test -n "$(VERSION_NAME)" || (echo "ERROR: Set VERSION_NAME in .env or .env.example"; exit 1)
+	@test -n "$(VERSION_NAME)" || (echo "ERROR: Set VERSION_NAME in .env.default or .env"; exit 1)
 	"$(GRADLE)" assembleDebug -PVERSION_NAME="$(VERSION_NAME)"
 
 release:
-	@test -n "$(VERSION_NAME)" || (echo "ERROR: Set VERSION_NAME in .env or .env.example"; exit 1)
+	@test -n "$(VERSION_NAME)" || (echo "ERROR: Set VERSION_NAME in .env.default or .env"; exit 1)
 	@test -n "$(RELEASE_KEYSTORE_PATH)" || (echo "ERROR: Set RELEASE_KEYSTORE_PATH in .env"; exit 1)
 	@test -n "$(ANDROID_KEYSTORE_PASSWORD)" || (echo "ERROR: Set ANDROID_KEYSTORE_PASSWORD in .env"; exit 1)
 	@test -n "$(ANDROID_KEY_ALIAS)" || (echo "ERROR: Set ANDROID_KEY_ALIAS in .env"; exit 1)
