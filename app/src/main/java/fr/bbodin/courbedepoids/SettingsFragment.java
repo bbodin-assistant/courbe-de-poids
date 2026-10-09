@@ -134,7 +134,8 @@ public class SettingsFragment extends Fragment {
     private void importData() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("text/csv");
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/json", "text/csv", "text/comma-separated-values", "application/octet-stream"});
         startActivityForResult(intent, REQUEST_IMPORT);
     }
 
@@ -166,7 +167,7 @@ public class SettingsFragment extends Fragment {
             } else if (requestCode == REQUEST_EXPORT) writeExport(data.getData());
             else if (requestCode == REQUEST_IMPORT) readImport(data.getData());
         } catch (Exception e) {
-            Toast.makeText(getActivity(), "Impossible de traiter le fichier.", Toast.LENGTH_LONG).show();
+            Toast.makeText(getActivity(), "Impossible de charger ce fichier : " + (e.getMessage() == null ? "format invalide" : e.getMessage()), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -183,25 +184,36 @@ public class SettingsFragment extends Fragment {
     }
 
     private void readImport(Uri uri) throws Exception {
-        int imported = 0;
+        StringBuilder content = new StringBuilder();
         try (InputStream in = getActivity().getContentResolver().openInputStream(uri)) {
             if (in == null) throw new IllegalStateException("No input stream");
             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
             String line;
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if (line.isEmpty() || line.toLowerCase(Locale.ROOT).startsWith("date,")) continue;
-                String[] columns = line.split(",");
-                if (columns.length < 2 || !columns[0].trim().matches("\\d{4}-\\d{2}-\\d{2}")) continue;
-                try {
-                    double weight = Double.parseDouble(columns[1].trim().replace(',', '.'));
-                    if (!WeightDatabase.isValidWeight(weight)) continue;
-                    db.save(columns[0].trim(), weight);
-                    imported++;
-                } catch (NumberFormatException ignored) { }
-            }
+            while ((line = reader.readLine()) != null) content.append(line).append('\n');
         }
+        String fileContent = content.toString().trim();
+        if (fileContent.isEmpty()) throw new IllegalArgumentException("Fichier vide");
+        if (fileContent.startsWith("{")) {
+            int restored = BackupManager.restoreBackup(getActivity(), db, new JSONObject(fileContent));
+            enabled.setChecked(prefs.getBoolean("reminder_enabled", false));
+            updateTimeText();
+            Toast.makeText(getActivity(), "Sauvegarde restaurée : " + restored + " mesure(s).", Toast.LENGTH_LONG).show();
+            return;
+        }
+        int imported = 0;
+        for (String rawLine : fileContent.split("\\r?\\n")) {
+            String row = rawLine.trim();
+            if (row.isEmpty() || row.toLowerCase(Locale.ROOT).startsWith("date,")) continue;
+            String[] columns = row.split(",");
+            if (columns.length < 2 || !columns[0].trim().matches("\\d{4}-\\d{2}-\\d{2}")) continue;
+            try {
+                double weight = Double.parseDouble(columns[1].trim().replace(',', '.'));
+                if (!WeightDatabase.isValidWeight(weight)) continue;
+                db.save(columns[0].trim(), weight);
+                imported++;
+            } catch (NumberFormatException ignored) { }
+        }
+        if (imported == 0) throw new IllegalArgumentException("Aucune mesure CSV valide trouvée");
         Toast.makeText(getActivity(), imported + " mesure(s) importée(s) depuis le CSV.", Toast.LENGTH_LONG).show();
     }
-
 }
