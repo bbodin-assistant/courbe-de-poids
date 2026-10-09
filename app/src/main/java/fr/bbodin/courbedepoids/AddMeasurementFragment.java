@@ -39,7 +39,7 @@ public class AddMeasurementFragment extends Fragment {
         waterMode = view.findViewById(R.id.water_mode_button);
         updateDate();
         dateInput.setOnClickListener(v -> openDatePicker());
-        weightMode.setOnClickListener(v -> showMode(true));
+        weightMode.setOnClickListener(v -> showMode(0));
         waterMode.setOnClickListener(v -> showMode(1));
         sportMode.setOnClickListener(v -> showMode(2));
         sportTypeGroup.setOnCheckedChangeListener((group,checkedId)->{int vis=checkedId==R.id.sport_type_run?View.VISIBLE:View.GONE;sportDistanceInput.setVisibility(vis);view.findViewById(R.id.sport_distance_label).setVisibility(vis);});
