@@ -26,6 +26,8 @@ public class HomeFragment extends Fragment {
     private int visibleDays = 7;
     private int endOffsetDays = 0;
     private final List<ChartRangeGestureListener> gestures = new ArrayList<>();
+    private int minChartOffset = ChartRange.MIN_END_OFFSET_DAYS;
+    private int maxChartOffset = ChartRange.MAX_END_OFFSET_DAYS;
 
     @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle state) {
         return inflater.inflate(R.layout.activity_main, container, false);
@@ -78,9 +80,10 @@ public class HomeFragment extends Fragment {
 
     private void attachGestures(View target) {
         ChartRangeGestureListener gesture = new ChartRangeGestureListener(target, visibleDays, endOffsetDays, (days, offset) -> { visibleDays = days; endOffsetDays = offset; syncGestures(); safeRefresh(); });
+        gesture.setOffsetBounds(minChartOffset, maxChartOffset);
         gestures.add(gesture); target.setOnTouchListener(gesture);
     }
-    private void syncGestures() { for (ChartRangeGestureListener gesture : gestures) gesture.setRange(visibleDays, endOffsetDays); }
+    private void syncGestures() { for (ChartRangeGestureListener gesture : gestures) { gesture.setOffsetBounds(minChartOffset, maxChartOffset); gesture.setRange(visibleDays, endOffsetDays); } }
     private void seedDebugDataIfNeeded() {
         if (!BuildConfig.DEBUG) return;
         List<WeightDatabase.Measurement> existingWeights = db.all();
@@ -171,6 +174,11 @@ public class HomeFragment extends Fragment {
         List<WeightDatabase.WaterEvent> waterEvents = db.allWaterEvents();
         List<WeightDatabase.SportEvent> sportEvents = db.allSportEvents();
         visibleDays = ChartRange.clampVisibleDays(visibleDays);
+        if (!all.isEmpty()) {
+            int[] bounds = ChartRange.allowedOffsets(Calendar.getInstance(), all.get(0).date, all.get(all.size() - 1).date, visibleDays);
+            minChartOffset = bounds[0]; maxChartOffset = bounds[1];
+            endOffsetDays = ChartRange.clampOffsetToData(endOffsetDays, visibleDays, minChartOffset, maxChartOffset);
+        }
         endOffsetDays = ChartRange.clampEndOffsetDays(endOffsetDays);
         waterChart.setData(waterEvents, visibleDays, endOffsetDays);
         sportChart.setData(sportEvents, visibleDays, endOffsetDays);
@@ -190,9 +198,7 @@ public class HomeFragment extends Fragment {
         ChartRange range = ChartRange.from(Calendar.getInstance(), visibleDays, endOffsetDays);
         Calendar rangeStart = range.start;
         Calendar rangeEnd = range.end;
-        List<WeightDatabase.Measurement> period = new ArrayList<>();
-        for (WeightDatabase.Measurement m : all) if (range.contains(m.date)) period.add(m);
-        chart.setData(period);
+        chart.setData(all, range.start, range.end);
         periodCaption.setText(rangeLabel(rangeStart, rangeEnd));
         if (period.size() >= 2) {
             double delta = period.get(period.size() - 1).weight - period.get(0).weight;
