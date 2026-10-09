@@ -37,6 +37,7 @@ public class MainActivity extends Activity {
 
     public void showTab(int tab) {
         if (tab < 0 || tab > 3) return;
+        if (tab == selectedTab && getFragmentManager().findFragmentById(R.id.fragment_container) != null) return;
         selectedTab = tab;
         android.app.Fragment fragment;
         switch (tab) {
@@ -46,6 +47,7 @@ public class MainActivity extends Activity {
             default: fragment = new HomeFragment(); break;
         }
         getFragmentManager().beginTransaction()
+                .setTransition(android.app.FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .replace(R.id.fragment_container, fragment)
                 .commit();
         BottomNavigation.updateStyles(this, selectedTab);
