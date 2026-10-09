@@ -78,7 +78,9 @@ public class HistoryActivity extends Activity {
             info.addView(weight);
             row.addView(info);
 
-            LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);\n            rowParams.bottomMargin = dp(8);\n            list.addView(row, rowParams);
+            LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);
+            rowParams.bottomMargin = dp(8);
+            list.addView(row, rowParams);
             View divider = new View(this);
             divider.setBackgroundColor(Color.rgb(226, 232, 240));
             list.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
