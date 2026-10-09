@@ -52,16 +52,16 @@ public class HomeFragment extends Fragment {
         } catch (RuntimeException error) {
             android.util.Log.e("HomeFragment", "Unable to initialize demo data", error);
         }
-        refresh();
+        safeRefresh();
     }
 
     @Override public void onResume() {
         super.onResume();
-        if (db != null && getView() != null) refresh();
+        if (db != null && getView() != null) safeRefresh();
     }
 
     private void bindPeriod(View root, int id, int days) {
-        root.findViewById(id).setOnClickListener(v -> { visibleDays = days; endOffsetDays = 0; syncGestures(); updatePeriodStyles(root); refresh(); });
+        root.findViewById(id).setOnClickListener(v -> { visibleDays = days; endOffsetDays = 0; syncGestures(); updatePeriodStyles(root); safeRefresh(); });
     }
 
     private void updatePeriodStyles(View root) {
@@ -77,7 +77,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void attachGestures(View target) {
-        ChartRangeGestureListener gesture = new ChartRangeGestureListener(target, visibleDays, endOffsetDays, (days, offset) -> { visibleDays = days; endOffsetDays = offset; syncGestures(); refresh(); });
+        ChartRangeGestureListener gesture = new ChartRangeGestureListener(target, visibleDays, endOffsetDays, (days, offset) -> { visibleDays = days; endOffsetDays = offset; syncGestures(); safeRefresh(); });
         gestures.add(gesture); target.setOnTouchListener(gesture);
     }
     private void syncGestures() { for (ChartRangeGestureListener gesture : gestures) gesture.setRange(visibleDays, endOffsetDays); }
@@ -151,6 +151,17 @@ public class HomeFragment extends Fragment {
     private void clearTime(Calendar value) {
         value.set(Calendar.HOUR_OF_DAY, 0); value.set(Calendar.MINUTE, 0);
         value.set(Calendar.SECOND, 0); value.set(Calendar.MILLISECOND, 0);
+    }
+
+    private void safeRefresh() {
+        try {
+            refresh();
+        } catch (RuntimeException error) {
+            android.util.Log.e("HomeFragment", "Unable to refresh home charts", error);
+            if (currentWeight != null) currentWeight.setText("— kg");
+            if (weightChange != null) weightChange.setText("Données temporairement indisponibles");
+            if (periodCaption != null) periodCaption.setText("Impossible d’afficher les graphiques");
+        }
     }
 
     private void refresh() {
