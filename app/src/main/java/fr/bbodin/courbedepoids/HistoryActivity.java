@@ -41,8 +41,8 @@ public class HistoryActivity extends Activity {
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(12, 14, 12, 14);
-            row.setBackgroundColor(Color.WHITE);
+            row.setPadding(dp(14), dp(14), dp(14), dp(14));
+            row.setBackgroundResource(R.drawable.bg_card);
             row.setClickable(true);
             row.setOnClickListener(v -> edit(m));
 
@@ -78,7 +78,7 @@ public class HistoryActivity extends Activity {
             info.addView(weight);
             row.addView(info);
 
-            list.addView(row, new LinearLayout.LayoutParams(-1, -2));
+            LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);\n            rowParams.bottomMargin = dp(8);\n            list.addView(row, rowParams);
             View divider = new View(this);
             divider.setBackgroundColor(Color.rgb(226, 232, 240));
             list.addView(divider, new LinearLayout.LayoutParams(-1, dp(1)));
