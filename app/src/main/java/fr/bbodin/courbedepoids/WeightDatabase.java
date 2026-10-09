@@ -78,12 +78,12 @@ public class WeightDatabase extends SQLiteOpenHelper {
         } finally {
             database.endTransaction();
         }
-        AutoBackupScheduler.backupIfEnabled(getContext());
+        AutoBackupScheduler.backupIfEnabled(context);
     }
 
     public void delete(String date) {
         getWritableDatabase().delete(TABLE, "date=?", new String[]{date});
-        AutoBackupScheduler.backupIfEnabled(getContext());
+        AutoBackupScheduler.backupIfEnabled(context);
     }
 
     public Measurement get(String date) {
