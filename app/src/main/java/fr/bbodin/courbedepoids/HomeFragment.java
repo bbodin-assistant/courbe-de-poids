@@ -23,7 +23,9 @@ public class HomeFragment extends Fragment {
     private SportChartView sportChart;
     private UnifiedChartView overviewChart;
     private TextView currentWeight, weightChange, periodCaption;
-    private int selectedDays = 7;
+    private int visibleDays = 7;
+    private int endOffsetDays = 0;
+    private final List<ChartRangeGestureListener> gestures = new ArrayList<>();
 
     @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle state) {
         return inflater.inflate(R.layout.activity_main, container, false);
@@ -43,6 +45,7 @@ public class HomeFragment extends Fragment {
         bindPeriod(view, R.id.period_30d, 30);
         bindPeriod(view, R.id.period_3m, 90);
         bindPeriod(view, R.id.period_1y, 365);
+        attachGestures(chart); attachGestures(overviewChart); attachGestures(waterChart); attachGestures(sportChart);
         // Demo seeding must never prevent the home screen from opening.
         try {
             seedDebugDataIfNeeded();
@@ -58,7 +61,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void bindPeriod(View root, int id, int days) {
-        root.findViewById(id).setOnClickListener(v -> { selectedDays = days; updatePeriodStyles(root); refresh(); });
+        root.findViewById(id).setOnClickListener(v -> { visibleDays = days; endOffsetDays = 0; syncGestures(); updatePeriodStyles(root); refresh(); });
     }
 
     private void updatePeriodStyles(View root) {
@@ -66,13 +69,18 @@ public class HomeFragment extends Fragment {
         int[] days = {7, 30, 90, 365};
         for (int i = 0; i < ids.length; i++) {
             TextView button = root.findViewById(ids[i]);
-            boolean active = selectedDays == days[i];
+            boolean active = visibleDays == days[i] && endOffsetDays == 0;
             button.setBackgroundResource(active ? R.drawable.bg_primary_button : R.drawable.bg_input);
             button.setTextColor(Color.parseColor(active ? "#FFFFFF" : "#64748B"));
             button.setTypeface(null, active ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
         }
     }
 
+    private void attachGestures(View target) {
+        ChartRangeGestureListener gesture = new ChartRangeGestureListener(target, visibleDays, endOffsetDays, (days, offset) -> { visibleDays = days; endOffsetDays = offset; syncGestures(); refresh(); });
+        gestures.add(gesture); target.setOnTouchListener(gesture);
+    }
+    private void syncGestures() { for (ChartRangeGestureListener gesture : gestures) gesture.setRange(visibleDays, endOffsetDays); }
     private void seedDebugDataIfNeeded() {
         if (!BuildConfig.DEBUG) return;
         List<WeightDatabase.Measurement> existingWeights = db.all();
@@ -151,28 +159,29 @@ public class HomeFragment extends Fragment {
         List<WeightDatabase.Measurement> all = db.all();
         List<WeightDatabase.WaterEvent> waterEvents = db.allWaterEvents();
         List<WeightDatabase.SportEvent> sportEvents = db.allSportEvents();
-        waterChart.setData(waterEvents, selectedDays);
-        sportChart.setData(sportEvents, selectedDays);
-        overviewChart.setData(all, waterEvents, sportEvents, selectedDays);
+        waterChart.setData(waterEvents, visibleDays, endOffsetDays);
+        sportChart.setData(sportEvents, visibleDays, endOffsetDays);
+        overviewChart.setData(all, waterEvents, sportEvents, visibleDays, endOffsetDays);
         updatePeriodStyles(root);
         if (all.isEmpty()) {
             currentWeight.setText("— kg");
             weightChange.setText("Aucune variation");
             weightChange.setTextColor(Color.GRAY);
             chart.setData(all);
-            overviewChart.setData(all, db.allWaterEvents(), db.allSportEvents(), selectedDays);
+            overviewChart.setData(all, db.allWaterEvents(), db.allSportEvents(), visibleDays, endOffsetDays);
             periodCaption.setText("Aucune mesure enregistrée");
             return;
         }
         WeightDatabase.Measurement latest = all.get(all.size() - 1);
         currentWeight.setText(format(latest.weight) + " kg");
-        Calendar cutoff = Calendar.getInstance();
-        cutoff.add(Calendar.DAY_OF_YEAR, -(selectedDays - 1));
-        String cutoffDate = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(cutoff.getTime());
+        Calendar rangeEnd = Calendar.getInstance(); clearTime(rangeEnd); rangeEnd.add(Calendar.DAY_OF_YEAR, -endOffsetDays);
+        Calendar rangeStart = (Calendar) rangeEnd.clone(); rangeStart.add(Calendar.DAY_OF_YEAR, -(visibleDays - 1));
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        String startDate = dateFormat.format(rangeStart.getTime()), endDate = dateFormat.format(rangeEnd.getTime());
         List<WeightDatabase.Measurement> period = new ArrayList<>();
-        for (WeightDatabase.Measurement m : all) if (m.date.compareTo(cutoffDate) >= 0) period.add(m);
+        for (WeightDatabase.Measurement m : all) if (m.date.compareTo(startDate) >= 0 && m.date.compareTo(endDate) <= 0) period.add(m);
         chart.setData(period);
-        periodCaption.setText("Variation sur " + periodLabel());
+        periodCaption.setText(rangeLabel(rangeStart, rangeEnd));
         if (period.size() >= 2) {
             double delta = period.get(period.size() - 1).weight - period.get(0).weight;
             String symbol = delta > 0.0001 ? "↑ +" : delta < -0.0001 ? "↓ " : "→ ";
@@ -185,11 +194,9 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    private String periodLabel() {
-        if (selectedDays == 7) return "les 7 derniers jours";
-        if (selectedDays == 30) return "les 30 derniers jours";
-        if (selectedDays == 90) return "les 3 derniers mois";
-        return "la dernière année";
+    private String rangeLabel(Calendar start, Calendar end) {
+        SimpleDateFormat fmt = new SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE);
+        return "Du " + fmt.format(start.getTime()) + " au " + fmt.format(end.getTime());
     }
 
     private String format(double value) { return String.format(Locale.FRANCE, "%.1f", value); }

@@ -23,15 +23,17 @@ public class UnifiedChartView extends View {
     private List<WeightDatabase.WaterEvent> water = new ArrayList<>();
     private List<WeightDatabase.SportEvent> sports = new ArrayList<>();
     private int days = 7;
+    private int endOffsetDays = 0;
 
     public UnifiedChartView(Context c) { super(c); }
     public UnifiedChartView(Context c, AttributeSet a) { super(c, a); }
     public UnifiedChartView(Context c, AttributeSet a, int style) { super(c, a, style); }
-    public void setData(List<WeightDatabase.Measurement> w, List<WeightDatabase.WaterEvent> a, List<WeightDatabase.SportEvent> s, int period) {
+    public void setData(List<WeightDatabase.Measurement> w, List<WeightDatabase.WaterEvent> a, List<WeightDatabase.SportEvent> s, int period, int offsetDays) {
         weights = w == null ? new ArrayList<>() : new ArrayList<>(w);
         water = a == null ? new ArrayList<>() : new ArrayList<>(a);
         sports = s == null ? new ArrayList<>() : new ArrayList<>(s);
-        days = Math.max(1, period);
+        days = Math.max(3, period);
+        endOffsetDays = offsetDays;
         invalidate();
     }
     private float dp(float n) { return n * getResources().getDisplayMetrics().density; }
@@ -39,7 +41,8 @@ public class UnifiedChartView extends View {
     @Override protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         Calendar today = Calendar.getInstance(); clearTime(today);
-        Calendar start = (Calendar) today.clone(); start.add(Calendar.DAY_OF_YEAR, -(days - 1));
+        Calendar end = (Calendar) today.clone(); end.add(Calendar.DAY_OF_YEAR, -endOffsetDays);
+        Calendar start = (Calendar) end.clone(); start.add(Calendar.DAY_OF_YEAR, -(days - 1));
         SimpleDateFormat key = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
         Map<String,Integer> indexes = new HashMap<>();
         Calendar cursor = (Calendar) start.clone();

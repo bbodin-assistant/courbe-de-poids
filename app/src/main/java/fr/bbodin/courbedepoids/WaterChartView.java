@@ -17,11 +17,12 @@ public class WaterChartView extends View {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private List<WeightDatabase.WaterEvent> events;
     private int days = 7;
+    private int endOffsetDays = 0;
     public WaterChartView(Context c) { super(c); }
     public WaterChartView(Context c, AttributeSet a) { super(c, a); }
     public WaterChartView(Context c, AttributeSet a, int d) { super(c, a, d); }
-    public void setData(List<WeightDatabase.WaterEvent> value, int periodDays) {
-        events = value; days = periodDays; invalidate();
+    public void setData(List<WeightDatabase.WaterEvent> value, int periodDays, int offsetDays) {
+        events = value; days = Math.max(3, periodDays); endOffsetDays = offsetDays; invalidate();
     }
     private float dp(float v) { return v * getResources().getDisplayMetrics().density; }
 
@@ -30,12 +31,14 @@ public class WaterChartView extends View {
         if (events == null || events.isEmpty()) { drawEmpty(canvas, "Aucune consommation d’eau enregistrée"); return; }
         Calendar today = Calendar.getInstance();
         clearTime(today);
-        Calendar start = (Calendar) today.clone();
+        Calendar end = (Calendar) today.clone();
+        end.add(Calendar.DAY_OF_YEAR, -endOffsetDays);
+        Calendar start = (Calendar) end.clone();
         start.add(Calendar.DAY_OF_YEAR, -(days - 1));
         SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
         Map<String, Integer> totals = new HashMap<>();
         for (WeightDatabase.WaterEvent event : events) {
-            if (event.date.compareTo(fmt.format(start.getTime())) >= 0 && event.date.compareTo(fmt.format(today.getTime())) <= 0) {
+            if (event.date.compareTo(fmt.format(start.getTime())) >= 0 && event.date.compareTo(fmt.format(end.getTime())) <= 0) {
                 Integer previous = totals.get(event.date);
                 totals.put(event.date, (previous == null ? 0 : previous) + event.amountMl);
             }
