@@ -14,6 +14,7 @@ public class WeightDatabase extends SQLiteOpenHelper {
     private static final int DB_VERSION = 1;
     private static final String TABLE = "measurements";
     private static final double MAX_WEIGHT_KG = 500.0;
+    private final Context context;
 
     public static class Measurement {
         public final String date;
@@ -26,6 +27,7 @@ public class WeightDatabase extends SQLiteOpenHelper {
 
     public WeightDatabase(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
+        this.context = context.getApplicationContext();
     }
 
     public static boolean isValidWeight(Double weight) {
@@ -53,7 +55,7 @@ public class WeightDatabase extends SQLiteOpenHelper {
         v.put("date", date);
         v.put("weight", weight);
         getWritableDatabase().insertWithOnConflict(TABLE, null, v, SQLiteDatabase.CONFLICT_REPLACE);
-        AutoBackupScheduler.backupIfEnabled(getContext());
+        AutoBackupScheduler.backupIfEnabled(context);
     }
 
     public void replaceAll(List<Measurement> measurements) {
