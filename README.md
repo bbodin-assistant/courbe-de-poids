@@ -2,7 +2,9 @@
 
 Application Android native permettant d'enregistrer et de consulter des mesures de poids.
 
-**[Consulter les builds APK et télécharger le dernier APK debug disponible](https://github.com/bbodin-assistant/courbe-de-poids/actions/workflows/build-apk.yml?query=branch%3Amain)** — ouvrir la dernière exécution réussie, puis télécharger l'artefact `courbe-de-poids-debug-*` dans la section **Artifacts**. Les artefacts sont conservés pendant 30 jours et le téléchargement peut nécessiter une connexion GitHub.
+**[Télécharger directement le dernier APK debug](https://github.com/bbodin-assistant/courbe-de-poids/releases/download/latest-debug/app-debug.apk)** — le lien pointe vers le fichier `.apk`, pas vers une archive ZIP. Le fichier est mis à jour automatiquement après chaque build réussi sur `main`.
+
+[Voir les exécutions du workflow](https://github.com/bbodin-assistant/courbe-de-poids/actions/workflows/build-apk.yml?query=branch%3Amain).
 
 ## Fonctionnalités
 
@@ -104,9 +106,12 @@ La description détaillée de la validation se trouve dans [`docs/TESTS_VALIDATI
 
 ## CI GitHub Actions
 
-Le workflow [.github/workflows/build-apk.yml](.github/workflows/build-apk.yml) s'exécute sur les pushes vers `main`. Il valide la version, construit l'APK debug, vérifie sa présence puis le publie comme artefact nommé `courbe-de-poids-debug-<version>`.
+Le workflow [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) s'exécute sur les pushes vers `main`. Il valide la version et construit l'APK debug, puis :
 
-Les artefacts sont conservés pendant 30 jours. Les tests instrumentés et la génération de l'APK/AAB release sont temporairement désactivés.
+- publie un artefact temporaire conservé 30 jours ;
+- met à jour une pré-release GitHub `latest-debug` avec le fichier `app-debug.apk`, accessible par le lien direct en haut de cette page.
+
+Cette pré-release contient uniquement l'APK debug. La génération de l'APK/AAB release signé et les tests instrumentés restent désactivés.
 
 ## Versionnement
 
