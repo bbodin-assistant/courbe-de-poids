@@ -43,7 +43,12 @@ public class HomeFragment extends Fragment {
         bindPeriod(view, R.id.period_30d, 30);
         bindPeriod(view, R.id.period_3m, 90);
         bindPeriod(view, R.id.period_1y, 365);
-        seedDebugDataIfNeeded();
+        // Demo seeding must never prevent the home screen from opening.
+        try {
+            seedDebugDataIfNeeded();
+        } catch (RuntimeException error) {
+            android.util.Log.e("HomeFragment", "Unable to initialize demo data", error);
+        }
         refresh();
     }
 
