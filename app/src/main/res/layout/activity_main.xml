@@ -18,6 +18,16 @@
     <TextView android:id="@+id/weight_period_caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="Variation sur les 7 derniers jours" android:textColor="#718198" android:textSize="13sp"/>
    </LinearLayout>
    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:background="@drawable/bg_card" android:elevation="2dp" android:orientation="vertical" android:padding="16dp">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Vue d’ensemble" android:textColor="#14243A" android:textSize="19sp" android:textStyle="bold"/>
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Poids, sport et eau sur une même période" android:textColor="#718198" android:textSize="13sp"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="8dp">
+     <View android:layout_width="18dp" android:layout_height="3dp" android:background="#147BEF"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="5dp" android:text="Poids" android:textSize="11sp" android:textColor="#64748B"/>
+     <ImageView android:layout_width="16dp" android:layout_height="16dp" android:layout_marginStart="12dp" android:src="@drawable/ic_sport" android:tint="#147BEF" android:contentDescription="@null"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="3dp" android:text="Sport" android:textSize="11sp" android:textColor="#64748B"/>
+     <ImageView android:layout_width="16dp" android:layout_height="16dp" android:layout_marginStart="12dp" android:src="@drawable/ic_water" android:tint="#0891B2" android:contentDescription="@null"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="3dp" android:text="Eau / jour" android:textSize="11sp" android:textColor="#64748B"/>
+    </LinearLayout>
+    <fr.bbodin.courbedepoids.UnifiedChartView android:id="@+id/overview_chart" android:layout_width="match_parent" android:layout_height="300dp" android:layout_marginTop="8dp"/>
+   </LinearLayout>
+   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:background="@drawable/bg_card" android:elevation="2dp" android:orientation="vertical" android:padding="16dp">
     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Évolution du poids" android:textColor="#14243A" android:textSize="19sp" android:textStyle="bold"/>
     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Chaque point correspond à une mesure" android:textColor="#718198" android:textSize="13sp"/>
     <fr.bbodin.courbedepoids.WeightChartView android:id="@+id/weight_chart" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="12dp"/>
