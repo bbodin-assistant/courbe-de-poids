@@ -2,7 +2,10 @@ plugins {
     id 'com.android.application'
 }
 
-def configuredVersionName = project.findProperty('VERSION_NAME') ?: '0.3-14'
+def configuredVersionName = System.getenv('VERSION_NAME') ?: project.findProperty('VERSION_NAME')
+if (!configuredVersionName) {
+    throw new GradleException('VERSION_NAME is required. Use make targets or set VERSION_NAME in the environment.')
+}
 def releaseKeystorePath = System.getenv('RELEASE_KEYSTORE_PATH')
 def releaseKeystorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD')
 def releaseKeyAlias = System.getenv('ANDROID_KEY_ALIAS')
@@ -28,7 +31,7 @@ android {
     signingConfigs {
         release {
             if (releaseKeystorePath && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword) {
-                storeFile file(releaseKeystorePath)
+                storeFile rootProject.file(releaseKeystorePath)
                 storePassword releaseKeystorePassword
                 keyAlias releaseKeyAlias
                 keyPassword releaseKeyPassword
