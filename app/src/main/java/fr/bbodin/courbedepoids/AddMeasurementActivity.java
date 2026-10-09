@@ -21,6 +21,7 @@ public class AddMeasurementActivity extends Activity {
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_add_measurement);
+        BottomNavigation.bind(this);
         dateInput = findViewById(R.id.date_input);
         todayHint = findViewById(R.id.date_today_hint);
         weightInput = findViewById(R.id.weight_input);
