@@ -40,7 +40,7 @@ public class WeightChartView extends View {
         super.onDraw(canvas);
         if(data.isEmpty()){drawPlaceholderCurve(canvas);return;}
         if(rangeStart==null||rangeEnd==null){Calendar end=Calendar.getInstance();clearTime(end);rangeEnd=(Calendar)end.clone();rangeStart=(Calendar)end.clone();rangeStart.add(Calendar.DAY_OF_YEAR,-6);}
-        float left=dp(42),right=getWidth()-dp(10),top=dp(18),bottom=getHeight()-dp(34);
+        float left=dp(43),right=getWidth()-dp(8),top=dp(18),bottom=getHeight()-dp(34);
         if(right<=left||bottom<=top)return;
         int startDay=day(ChartRange.format(rangeStart)),endDay=day(ChartRange.format(rangeEnd));
         if(startDay==Integer.MIN_VALUE||endDay<=startDay)return;
@@ -68,7 +68,7 @@ public class WeightChartView extends View {
         for(int i=0;i<=4;i++){float y=top+(bottom-top)*i/4f;canvas.drawLine(left,y,right,y,paint);}
         paint.setStyle(Paint.Style.FILL);paint.setColor(0xFF7A8798);paint.setTextSize(dp(10));paint.setTypeface(Typeface.DEFAULT);
         for(int i=0;i<=4;i++){double v=max-(max-min)*i/4d;float y=top+(bottom-top)*i/4f;canvas.drawText(String.format(Locale.FRANCE,"%.1f",v),0,y+dp(4),paint);}
-        float scaleX=(right-left)/(Math.max(endDay,lastDay+ChartRange.PREDICTION_DAYS)-startDay);
+        int count=endDay-startDay+1;\n        float scaleX=(right-left)/count;
         Path line=new Path();boolean started=false;
         Point previous=null;
         for(Point point:points){
@@ -109,7 +109,7 @@ public class WeightChartView extends View {
         canvas.restore();
         paint.setColor(0xFF7A8798);paint.setTextSize(dp(10));
         SimpleDateFormat input=new SimpleDateFormat("yyyy-MM-dd",Locale.US),output=new SimpleDateFormat("dd/MM",Locale.FRANCE);
-        Calendar label=(Calendar)rangeStart.clone();int count=endDay-startDay+1;int step=Math.max(1,(int)Math.ceil(count/5.0));
+        Calendar label=(Calendar)rangeStart.clone();int step=count<=7?1:count<=30?5:count<=90?15:60;
         for(int i=0;i<count;i+=step){drawDate(canvas,ChartRange.format(label),x(startDay+i,startDay,scaleX,left),left,right,bottom,input,output);label.add(Calendar.DAY_OF_YEAR,step);}
         if((count-1)%step!=0)drawDate(canvas,ChartRange.format(rangeEnd),right,left,right,bottom,input,output);
     }
@@ -124,14 +124,14 @@ public class WeightChartView extends View {
         return new Prediction(days[n-1],weights[n-1],slope);
     }
     private int day(String value){return ChartRange.dayNumber(value);}
-    private float x(int day,int startDay,float scale,float left){return left+(day-startDay)*scale;}
+    private float x(int day,int startDay,float scale,float left){return left+(day-startDay+0.5f)*scale;}
     private float y(double value,double min,double max,float top,float bottom){return(float)(bottom-(value-min)/(max-min)*(bottom-top));}
     private void drawDate(Canvas c,String raw,float x,float left,float right,float bottom,SimpleDateFormat in,SimpleDateFormat out){
         String label=raw;try{java.util.Date d=in.parse(raw);if(d!=null)label=out.format(d);}catch(Exception ignored){}
         float w=paint.measureText(label);c.drawText(label,Math.max(left,Math.min(x-w/2f,right-w)),bottom+dp(26),paint);
     }
     private void drawPlaceholderCurve(Canvas c){
-        float left=dp(42),right=getWidth()-dp(10),top=dp(18),bottom=getHeight()-dp(34);
+        float left=dp(43),right=getWidth()-dp(8),top=dp(18),bottom=getHeight()-dp(34);
         if(right<=left||bottom<=top)return;
         paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(1));paint.setColor(0xFFE4EAF2);
         for(int i=0;i<=4;i++)c.drawLine(left,top+(bottom-top)*i/4f,right,top+(bottom-top)*i/4f,paint);
