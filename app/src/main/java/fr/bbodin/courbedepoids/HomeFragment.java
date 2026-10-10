@@ -28,6 +28,7 @@ public class HomeFragment extends Fragment {
     private final List<ChartRangeGestureListener> gestures = new ArrayList<>();
     private int minChartOffset = ChartRange.MIN_END_OFFSET_DAYS;
     private int maxChartOffset = ChartRange.MAX_END_OFFSET_DAYS;
+    private int maxVisibleChartDays = 7;
 
     @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle state) {
         return inflater.inflate(R.layout.activity_main, container, false);
@@ -81,9 +82,10 @@ public class HomeFragment extends Fragment {
     private void attachGestures(View target) {
         ChartRangeGestureListener gesture = new ChartRangeGestureListener(target, visibleDays, endOffsetDays, (days, offset) -> { visibleDays = days; endOffsetDays = offset; syncGestures(); safeRefresh(); });
         gesture.setOffsetBounds(minChartOffset, maxChartOffset);
+        gesture.setMaxVisibleDays(maxVisibleChartDays);
         gestures.add(gesture); target.setOnTouchListener(gesture);
     }
-    private void syncGestures() { for (ChartRangeGestureListener gesture : gestures) { gesture.setOffsetBounds(minChartOffset, maxChartOffset); gesture.setRange(visibleDays, endOffsetDays); } }
+    private void syncGestures() { for (ChartRangeGestureListener gesture : gestures) { gesture.setOffsetBounds(minChartOffset, maxChartOffset); gesture.setMaxVisibleDays(maxVisibleChartDays); gesture.setRange(visibleDays, endOffsetDays); } }
     private void seedDebugDataIfNeeded() {
         if (!BuildConfig.DEBUG) return;
         List<WeightDatabase.Measurement> existingWeights = db.all();
@@ -175,16 +177,24 @@ public class HomeFragment extends Fragment {
         List<WeightDatabase.SportEvent> sportEvents = db.allSportEvents();
         visibleDays = ChartRange.clampVisibleDays(visibleDays);
         if (!all.isEmpty()) {
+            int firstDay = ChartRange.dayNumber(all.get(0).date);
+            int lastDay = ChartRange.dayNumber(all.get(all.size() - 1).date);
+            int availableHistory = firstDay == Integer.MIN_VALUE || lastDay == Integer.MIN_VALUE ? 7 : Math.max(7, lastDay - firstDay + 1 + ChartRange.PREDICTION_DAYS);
+            maxVisibleChartDays = ChartRange.clampVisibleDays(availableHistory);
+            visibleDays = Math.min(visibleDays, maxVisibleChartDays);
             int[] bounds = ChartRange.allowedOffsets(Calendar.getInstance(), all.get(0).date, all.get(all.size() - 1).date, visibleDays);
             minChartOffset = bounds[0]; maxChartOffset = bounds[1];
             endOffsetDays = ChartRange.clampOffsetToData(endOffsetDays, visibleDays, minChartOffset, maxChartOffset);
         }
         endOffsetDays = ChartRange.clampEndOffsetDays(endOffsetDays);
+        syncGestures();
         waterChart.setData(waterEvents, visibleDays, endOffsetDays);
         sportChart.setData(sportEvents, visibleDays, endOffsetDays);
         overviewChart.setData(all, waterEvents, sportEvents, visibleDays, endOffsetDays);
         updatePeriodStyles(root);
         if (all.isEmpty()) {
+            maxVisibleChartDays = 7;
+            syncGestures();
             currentWeight.setText("— kg");
             weightChange.setText("Aucune variation");
             weightChange.setTextColor(Color.GRAY);
