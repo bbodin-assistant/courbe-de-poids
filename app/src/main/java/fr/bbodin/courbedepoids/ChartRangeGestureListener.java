@@ -8,14 +8,16 @@ public final class ChartRangeGestureListener implements View.OnTouchListener {
     private final Listener l;
     private int days, offset;
     private int minOffset = ChartRange.MIN_END_OFFSET_DAYS, maxOffset = ChartRange.MAX_END_OFFSET_DAYS;
+    private int maxVisibleDays = ChartRange.MAX_VISIBLE_DAYS;
     private float x, y, span, anchor, rem;
     private boolean pinch;
     public ChartRangeGestureListener(View v, int d, int o, Listener l) { this.v=v; days=ChartRange.clampVisibleDays(d); offset=o; this.l=l; }
     public void setOffsetBounds(int min, int max) { minOffset=Math.min(min,max); maxOffset=Math.max(min,max); offset=clampOffset(offset,days); }
+    public void setMaxVisibleDays(int max) { maxVisibleDays=Math.max(ChartRange.MIN_VISIBLE_DAYS,Math.min(ChartRange.MAX_VISIBLE_DAYS,max)); days=Math.min(days,maxVisibleDays); offset=clampOffset(offset,days); }
     public void setRange(int d,int o) { days=ChartRange.clampVisibleDays(d); offset=clampOffset(o,days); }
     private int clampOffset(int value,int visibleDays) { return ChartRange.clampOffsetToData(value,visibleDays,minOffset,maxOffset); }
     private void send(int d,int o) {
-        d=ChartRange.clampVisibleDays(d); o=clampOffset(o,d);
+        d=Math.max(ChartRange.MIN_VISIBLE_DAYS,Math.min(maxVisibleDays,d)); o=clampOffset(o,d);
         if(d==days&&o==offset)return;
         days=d;offset=o;l.onRangeChanged(d,o);
     }
@@ -24,7 +26,7 @@ public final class ChartRangeGestureListener implements View.OnTouchListener {
         int k=e.getActionMasked();
         if(k==MotionEvent.ACTION_DOWN){x=e.getX();y=e.getY();pinch=false;rem=0;return true;}
         if(k==MotionEvent.ACTION_POINTER_DOWN&&e.getPointerCount()>1){pinch=true;block();span=dist(e);float f=Math.max(0,Math.min(1,mid(e)/Math.max(1,a.getWidth())));anchor=-offset-days+1+f*(days-1);return true;}
-        if(k==MotionEvent.ACTION_MOVE&&e.getPointerCount()>1){float s=dist(e);if(span>0&&s>0){int n=Math.max(3,Math.min(3650,Math.round(days*span/s)));float f=Math.max(0,Math.min(1,mid(e)/Math.max(1,a.getWidth())));span=s;send(n,Math.round(-anchor-(1-f)*(n-1)));}block();return true;}
+        if(k==MotionEvent.ACTION_MOVE&&e.getPointerCount()>1){float s=dist(e);if(span>0&&s>0){int n=Math.max(ChartRange.MIN_VISIBLE_DAYS,Math.min(maxVisibleDays,Math.round(days*span/s)));float f=Math.max(0,Math.min(1,mid(e)/Math.max(1,a.getWidth())));span=s;send(n,Math.round(-anchor-(1-f)*(n-1)));}block();return true;}
         if(k==MotionEvent.ACTION_MOVE&&!pinch){float nx=e.getX(),ny=e.getY(),dx=nx-x;if(Math.abs(dx)>Math.abs(ny-y)*1.15f){block();rem+=dx*days/Math.max(1,a.getWidth());int shift=Math.round(rem);if(shift!=0){rem-=shift;send(days,offset+shift);}}x=nx;y=ny;return true;}
         if(k==MotionEvent.ACTION_UP||k==MotionEvent.ACTION_CANCEL){pinch=false;rem=0;if(v.getParent()!=null)v.getParent().requestDisallowInterceptTouchEvent(false);}return true;
     }
