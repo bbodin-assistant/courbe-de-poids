@@ -89,7 +89,7 @@ public class WaterChartView extends View {
         }
     }
     private int labelStep(float width,int count) { int needed=Math.max(1,(int)Math.ceil(count/(width/dp(58)))); int[] intervals={1,2,5,7,10,14,15,21,30,45,60,90,120,180}; for(int interval:intervals)if(interval>=needed)return interval; return ((needed+179)/180)*180; }
-    private void clearTime(Calendar c) {}
+    private void clearTime(Calendar c) {
         c.set(Calendar.HOUR_OF_DAY, 0); c.set(Calendar.MINUTE, 0);
         c.set(Calendar.SECOND, 0); c.set(Calendar.MILLISECOND, 0);
     }
