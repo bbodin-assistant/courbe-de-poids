@@ -68,7 +68,8 @@ public class WeightChartView extends View {
         for(int i=0;i<=4;i++){float y=top+(bottom-top)*i/4f;canvas.drawLine(left,y,right,y,paint);}
         paint.setStyle(Paint.Style.FILL);paint.setColor(0xFF7A8798);paint.setTextSize(dp(10));paint.setTypeface(Typeface.DEFAULT);
         for(int i=0;i<=4;i++){double v=max-(max-min)*i/4d;float y=top+(bottom-top)*i/4f;canvas.drawText(String.format(Locale.FRANCE,"%.1f",v),0,y+dp(4),paint);}
-        int count=endDay-startDay+1;\n        float scaleX=(right-left)/count;
+        int count=endDay-startDay+1;
+        float scaleX=(right-left)/count;
         Path line=new Path();boolean started=false;
         Point previous=null;
         for(Point point:points){
@@ -111,7 +112,7 @@ public class WeightChartView extends View {
         SimpleDateFormat input=new SimpleDateFormat("yyyy-MM-dd",Locale.US),output=new SimpleDateFormat("dd/MM",Locale.FRANCE);
         Calendar label=(Calendar)rangeStart.clone();int step=count<=7?1:count<=30?5:count<=90?15:60;
         for(int i=0;i<count;i+=step){drawDate(canvas,ChartRange.format(label),x(startDay+i,startDay,scaleX,left),left,right,bottom,input,output);label.add(Calendar.DAY_OF_YEAR,step);}
-        if((count-1)%step!=0)drawDate(canvas,ChartRange.format(rangeEnd),right,left,right,bottom,input,output);
+        if((count-1)%step!=0)drawDate(canvas,ChartRange.format(rangeEnd),x(endDay,startDay,scaleX,left),left,right,bottom,input,output);
     }
     private Prediction prediction(List<WeightDatabase.Measurement> values){
         int n=Math.min(8,values.size());if(n<2)return null;
