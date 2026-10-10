@@ -143,14 +143,14 @@ public class WeightDatabase extends SQLiteOpenHelper {
     }
 
     public Measurement get(String date) {
-        Cursor c = getReadableDatabase().query(TABLE, new String[]{"date", "weight"}, "date=?", new String[]{date}, null, null, null);
+        Cursor c = getReadableDatabase().query(TABLE, new String[]{"date", "weight", "measured_at"}, "date=?", new String[]{date}, null, null, null);
         try { return c.moveToFirst() ? new Measurement(c.getString(0), c.getDouble(1), c.getLong(2)) : null; } finally { c.close(); }
     }
 
     public List<Measurement> all() {
         List<Measurement> result = new ArrayList<>();
         Cursor c = getReadableDatabase().query(TABLE, new String[]{"date", "weight", "measured_at"}, null, null, null, null, "date ASC");
-        try { while (c.moveToNext()) result.add(new Measurement(c.getString(0), c.getDouble(1))); } finally { c.close(); }
+        try { while (c.moveToNext()) result.add(new Measurement(c.getString(0), c.getDouble(1), c.getLong(2))); } finally { c.close(); }
         return result;
     }
 }
