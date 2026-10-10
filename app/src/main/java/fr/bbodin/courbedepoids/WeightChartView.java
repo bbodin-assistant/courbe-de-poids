@@ -38,7 +38,7 @@ public class WeightChartView extends View {
     private float dp(float v){return v*getResources().getDisplayMetrics().density;}
     @Override protected void onDraw(Canvas canvas){
         super.onDraw(canvas);
-        if(data.isEmpty()){drawEmpty(canvas,"Aucune mesure sur cette période");return;}
+        if(data.isEmpty()){drawPlaceholderCurve(canvas);return;}
         if(rangeStart==null||rangeEnd==null){Calendar end=Calendar.getInstance();clearTime(end);rangeEnd=(Calendar)end.clone();rangeStart=(Calendar)end.clone();rangeStart.add(Calendar.DAY_OF_YEAR,-6);}
         float left=dp(42),right=getWidth()-dp(10),top=dp(18),bottom=getHeight()-dp(34);
         if(right<=left||bottom<=top)return;
@@ -78,6 +78,10 @@ public class WeightChartView extends View {
                 line.cubicTo(mid,prevY,mid,py,px,py);
             }
             previous=point;
+        }
+        if(points.size()==1){
+            float onlyY=y(points.get(0).weight,min,max,top,bottom);
+            line.reset();line.moveTo(left,onlyY);line.lineTo(right,onlyY);
         }
         canvas.save();canvas.clipRect(left,top,right,bottom);
         Path area=new Path(line);
@@ -125,6 +129,18 @@ public class WeightChartView extends View {
     private void drawDate(Canvas c,String raw,float x,float left,float right,float bottom,SimpleDateFormat in,SimpleDateFormat out){
         String label=raw;try{java.util.Date d=in.parse(raw);if(d!=null)label=out.format(d);}catch(Exception ignored){}
         float w=paint.measureText(label);c.drawText(label,Math.max(left,Math.min(x-w/2f,right-w)),bottom+dp(26),paint);
+    }
+    private void drawPlaceholderCurve(Canvas c){
+        float left=dp(42),right=getWidth()-dp(10),top=dp(18),bottom=getHeight()-dp(34);
+        if(right<=left||bottom<=top)return;
+        paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(1));paint.setColor(0xFFE4EAF2);
+        for(int i=0;i<=4;i++)c.drawLine(left,top+(bottom-top)*i/4f,right,top+(bottom-top)*i/4f,paint);
+        float mid=(top+bottom)/2f;Path curve=new Path();curve.moveTo(left,mid+dp(9));
+        curve.cubicTo(left+(right-left)*.25f,mid+dp(9),left+(right-left)*.25f,mid-dp(9),left+(right-left)*.5f,mid-dp(9));
+        curve.cubicTo(left+(right-left)*.75f,mid-dp(9),left+(right-left)*.75f,mid+dp(9),right,mid+dp(9));
+        paint.setColor(0xFF94A3B8);paint.setStrokeWidth(dp(2.5f));paint.setPathEffect(new android.graphics.DashPathEffect(new float[]{dp(6),dp(5)},0));c.drawPath(curve,paint);paint.setPathEffect(null);
+        paint.setStyle(Paint.Style.FILL);paint.setColor(0xFF718198);paint.setTextSize(dp(12));paint.setTextAlign(Paint.Align.CENTER);
+        c.drawText("Ajoutez une mesure pour tracer votre évolution",getWidth()/2f,bottom+dp(22),paint);paint.setTextAlign(Paint.Align.LEFT);
     }
     private void drawEmpty(Canvas c,String message){paint.setStyle(Paint.Style.FILL);paint.setColor(0xFF718198);paint.setTextSize(dp(13));paint.setTextAlign(Paint.Align.CENTER);c.drawText(message,getWidth()/2f,getHeight()/2f,paint);paint.setTextAlign(Paint.Align.LEFT);}
     private void clearTime(Calendar c){c.set(Calendar.HOUR_OF_DAY,0);c.set(Calendar.MINUTE,0);c.set(Calendar.SECOND,0);c.set(Calendar.MILLISECOND,0);}
