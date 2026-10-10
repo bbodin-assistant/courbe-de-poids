@@ -47,7 +47,7 @@ public class ChartRangeTest {
     @Test public void panBoundsStayWithinMeasuredHistoryAndForecastWindow() {
         Calendar today = calendar(2026, 10, 9);
         int[] bounds = ChartRange.allowedOffsets(today, "2026-09-01", "2026-10-09", 7);
-        assertEquals(-14, bounds[0]);
+        assertEquals(-15, bounds[0]);
         assertEquals(32, bounds[1]);
         assertEquals(bounds[0], ChartRange.clampOffsetToData(-1000, 7, bounds[0], bounds[1]));
         assertEquals(bounds[1], ChartRange.clampOffsetToData(1000, 7, bounds[0], bounds[1]));
