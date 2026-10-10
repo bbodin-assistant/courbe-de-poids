@@ -20,7 +20,7 @@ public final class BackupManager {
         root.put("createdAt", System.currentTimeMillis());
         JSONArray measurements = new JSONArray();
         for (WeightDatabase.Measurement measurement : database.all()) {
-            JSONObject item = new JSONObject(); item.put("date", measurement.date); item.put("weightKg", measurement.weight); measurements.put(item);
+            JSONObject item = new JSONObject(); item.put("date", measurement.date); item.put("weightKg", measurement.weight); item.put("measuredAt", measurement.measuredAt); measurements.put(item);
         }
         root.put("measurements", measurements);
         JSONArray waterEvents = new JSONArray();
@@ -52,7 +52,10 @@ public final class BackupManager {
             if (!date.matches("\\d{4}-\\d{2}-\\d{2}")) throw new JSONException("Date invalide");
             double weight = item.optDouble("weightKg", Double.NaN);
             if (!WeightDatabase.isValidWeight(weight)) throw new JSONException("Poids invalide");
-            validated.add(new WeightDatabase.Measurement(date, weight));
+            long measuredAt=item.optLong("measuredAt",0L);
+            if(measuredAt<0)throw new JSONException("Heure de mesure invalide");
+            if(measuredAt==0L){try{java.text.SimpleDateFormat fmt=new java.text.SimpleDateFormat("yyyy-MM-dd",java.util.Locale.US);fmt.setTimeZone(java.util.TimeZone.getDefault());java.util.Date parsed=fmt.parse(date);measuredAt=parsed==null?0L:parsed.getTime();}catch(Exception ignored){measuredAt=0L;}}
+            validated.add(new WeightDatabase.Measurement(date,weight,measuredAt));
         }
         List<WeightDatabase.WaterEvent> waterEvents = new ArrayList<>();
         JSONArray waterArray = root.optJSONArray("waterEvents");

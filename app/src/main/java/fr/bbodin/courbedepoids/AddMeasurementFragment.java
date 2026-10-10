@@ -1,6 +1,7 @@
 package fr.bbodin.courbedepoids;
 
 import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.graphics.Color;
@@ -17,7 +18,7 @@ import java.util.Calendar;
 import java.util.Locale;
 
 public class AddMeasurementFragment extends Fragment {
-    private TextView dateInput;
+    private TextView dateInput, timeInput;
     private EditText weightInput, customWaterInput, sportDurationInput, sportDistanceInput;
     private android.widget.RadioGroup sportTypeGroup;
     private View weightForm, waterForm, sportForm, weightMode, waterMode, sportMode;
@@ -30,6 +31,7 @@ public class AddMeasurementFragment extends Fragment {
     @Override public void onViewCreated(View view, Bundle state) {
         super.onViewCreated(view, state);
         dateInput = view.findViewById(R.id.date_input);
+        LinearLayout dateCard=(LinearLayout)dateInput.getParent();timeInput=new TextView(getActivity());timeInput.setTextSize(16);timeInput.setTextColor(Color.rgb(20,36,58));timeInput.setGravity(android.view.Gravity.CENTER_VERTICAL);timeInput.setPadding(dp(14),0,dp(14),0);timeInput.setBackgroundResource(R.drawable.bg_input);timeInput.setClickable(true);timeInput.setFocusable(true);LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-1,dp(52));tp.topMargin=dp(8);dateCard.addView(timeInput,tp);
         weightInput = view.findViewById(R.id.weight_input);
         customWaterInput = view.findViewById(R.id.water_custom_input);
         weightForm = view.findViewById(R.id.weight_form);
@@ -37,7 +39,8 @@ public class AddMeasurementFragment extends Fragment {
         sportForm=view.findViewById(R.id.sport_form);sportMode=view.findViewById(R.id.sport_mode_button);sportDurationInput=view.findViewById(R.id.sport_duration_input);sportDistanceInput=view.findViewById(R.id.sport_distance_input);sportTypeGroup=view.findViewById(R.id.sport_type_group);
         weightMode = view.findViewById(R.id.weight_mode_button);
         waterMode = view.findViewById(R.id.water_mode_button);
-        updateDate();
+        updateDate(); updateTime();
+        timeInput.setOnClickListener(v -> openTimePicker());
         dateInput.setOnClickListener(v -> openDatePicker());
         weightMode.setOnClickListener(v -> showMode(0));
         waterMode.setOnClickListener(v -> showMode(1));
@@ -68,13 +71,17 @@ public class AddMeasurementFragment extends Fragment {
 
     private void openDatePicker() {
         new DatePickerDialog(getActivity(), (picker, year, month, day) -> {
-            date.set(year, month, day);
+            int h=date.get(Calendar.HOUR_OF_DAY),m=date.get(Calendar.MINUTE);date.set(year,month,day,h,m,0);
             date.set(Calendar.HOUR_OF_DAY, 0); date.set(Calendar.MINUTE, 0);
             date.set(Calendar.SECOND, 0); date.set(Calendar.MILLISECOND, 0);
             updateDate();
         }, date.get(Calendar.YEAR), date.get(Calendar.MONTH), date.get(Calendar.DAY_OF_MONTH)).show();
     }
 
+    private void openTimePicker(){new TimePickerDialog(getActivity(),(p,h,m)->{date.set(Calendar.HOUR_OF_DAY,h);date.set(Calendar.MINUTE,m);date.set(Calendar.SECOND,0);date.set(Calendar.MILLISECOND,0);updateTime();},date.get(Calendar.HOUR_OF_DAY),date.get(Calendar.MINUTE),true).show();}
+    private void updateTime(){timeInput.setText("Heure de mesure · "+new SimpleDateFormat("HH:mm",Locale.FRANCE).format(date.getTime())+" ("+java.util.TimeZone.getDefault().getID()+")");}
+    private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
+    private long measuredAt(){return date.getTimeInMillis();}
     private void updateDate() {
         Calendar selected = (Calendar) date.clone();
         selected.set(Calendar.HOUR_OF_DAY, 0); selected.set(Calendar.MINUTE, 0);
@@ -104,7 +111,7 @@ public class AddMeasurementFragment extends Fragment {
             weightInput.setError("Entrez un poids valide.");
             return;
         }
-        new WeightDatabase(getActivity()).save(dateKey(), value);
+        new WeightDatabase(getActivity()).save(dateKey(), value, measuredAt());
         Toast.makeText(getActivity(), "Mesure enregistrée.", Toast.LENGTH_SHORT).show();
         ((MainActivity) getActivity()).showTab(0);
     }
@@ -120,9 +127,9 @@ public class AddMeasurementFragment extends Fragment {
         saveWater(amount);
     }
 
-    private void saveSport(){int id=sportTypeGroup.getCheckedRadioButtonId();String type=id==R.id.sport_type_yoga?"Yoga":id==R.id.sport_type_run?"Course":id==R.id.sport_type_climb?"Escalade":"Workout";int duration;try{duration=Integer.parseInt(sportDurationInput.getText().toString().trim());}catch(Exception e){duration=-1;}double distance=0;if(type.equals("Course")&&!sportDistanceInput.getText().toString().trim().isEmpty())try{distance=Double.parseDouble(sportDistanceInput.getText().toString().trim().replace(',','.'));}catch(Exception e){distance=-1;}if(!WeightDatabase.isValidSport(type,duration,distance)){if(duration<1||duration>1440)sportDurationInput.setError("Durée entre 1 et 1440 minutes.");else sportDistanceInput.setError("Distance invalide (0 à 1000 km).");return;}new WeightDatabase(getActivity()).saveSport(dateKey(),type,duration,distance);Toast.makeText(getActivity(),type+" enregistré ("+duration+" min).",Toast.LENGTH_SHORT).show();((MainActivity)getActivity()).showTab(0);}
+    private void saveSport(){int id=sportTypeGroup.getCheckedRadioButtonId();String type=id==R.id.sport_type_yoga?"Yoga":id==R.id.sport_type_run?"Course":id==R.id.sport_type_climb?"Escalade":"Workout";int duration;try{duration=Integer.parseInt(sportDurationInput.getText().toString().trim());}catch(Exception e){duration=-1;}double distance=0;if(type.equals("Course")&&!sportDistanceInput.getText().toString().trim().isEmpty())try{distance=Double.parseDouble(sportDistanceInput.getText().toString().trim().replace(',','.'));}catch(Exception e){distance=-1;}if(!WeightDatabase.isValidSport(type,duration,distance)){if(duration<1||duration>1440)sportDurationInput.setError("Durée entre 1 et 1440 minutes.");else sportDistanceInput.setError("Distance invalide (0 à 1000 km).");return;}new WeightDatabase(getActivity()).saveSport(dateKey(),type,duration,distance,measuredAt());Toast.makeText(getActivity(),type+" enregistré ("+duration+" min).",Toast.LENGTH_SHORT).show();((MainActivity)getActivity()).showTab(0);}
     private void saveWater(int amountMl) {
-        new WeightDatabase(getActivity()).saveWater(dateKey(), amountMl);
+        new WeightDatabase(getActivity()).saveWater(dateKey(), amountMl, measuredAt());
         Toast.makeText(getActivity(), amountMl + " ml d'eau enregistrés.", Toast.LENGTH_SHORT).show();
         ((MainActivity) getActivity()).showTab(0);
     }

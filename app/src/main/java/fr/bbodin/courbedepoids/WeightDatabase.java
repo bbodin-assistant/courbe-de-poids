@@ -10,7 +10,7 @@ import java.util.List;
 
 public class WeightDatabase extends SQLiteOpenHelper {
     private static final String DB_NAME = "weight.db";
-    private static final int DB_VERSION = 3;
+    private static final int DB_VERSION = 4;
     private static final String TABLE = "measurements";
     private static final String WATER_TABLE = "water_events";
     private static final String SPORT_TABLE = "sport_events";
@@ -20,7 +20,10 @@ public class WeightDatabase extends SQLiteOpenHelper {
     public static class Measurement {
         public final String date;
         public final double weight;
-        public Measurement(String date, double weight) { this.date = date; this.weight = weight; }
+        public final long measuredAt;
+        public Measurement(String date,double weight){this(date,weight,localMidnight(date));}
+        public Measurement(String date,double weight,long measuredAt){this.date=date;this.weight=weight;this.measuredAt=measuredAt;}
+        private static long localMidnight(String date){try{java.text.SimpleDateFormat f=new java.text.SimpleDateFormat("yyyy-MM-dd",java.util.Locale.US);f.setTimeZone(java.util.TimeZone.getDefault());java.util.Date d=f.parse(date);return d==null?System.currentTimeMillis():d.getTime();}catch(Exception e){return System.currentTimeMillis();}}
     }
 
     public static class WaterEvent {
@@ -52,7 +55,7 @@ public class WeightDatabase extends SQLiteOpenHelper {
     }
 
     @Override public void onCreate(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE " + TABLE + " (date TEXT PRIMARY KEY, weight REAL NOT NULL)");
+        db.execSQL("CREATE TABLE " + TABLE + " (date TEXT PRIMARY KEY, weight REAL NOT NULL, measured_at INTEGER NOT NULL DEFAULT 0)");
         createWaterTable(db);
         createSportTable(db);
     }
@@ -63,23 +66,15 @@ public class WeightDatabase extends SQLiteOpenHelper {
     }
 
     private void createSportTable(SQLiteDatabase db){db.execSQL("CREATE TABLE IF NOT EXISTS sport_events (_id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, type TEXT NOT NULL, duration_minutes INTEGER NOT NULL, distance_km REAL NOT NULL DEFAULT 0, created_at INTEGER NOT NULL)");db.execSQL("CREATE INDEX IF NOT EXISTS idx_sport_events_date ON sport_events (date)");}
-    @Override public void onUpgrade(SQLiteDatabase db,int oldVersion,int newVersion){if(oldVersion<2)createWaterTable(db);if(oldVersion<3)createSportTable(db);}
+    @Override public void onUpgrade(SQLiteDatabase db,int oldVersion,int newVersion){if(oldVersion<2)createWaterTable(db);if(oldVersion<3)createSportTable(db);if(oldVersion<4){db.execSQL("ALTER TABLE "+TABLE+" ADD COLUMN measured_at INTEGER NOT NULL DEFAULT 0");Cursor c=db.query(TABLE,new String[]{"date"},null,null,null,null,null);try{while(c.moveToNext()){String date=c.getString(0);ContentValues v=new ContentValues();v.put("measured_at",Measurement.localMidnight(date));db.update(TABLE,v,"date=?",new String[]{date});}}finally{c.close();}}}
 
-    public void save(String date, double weight) {
-        if (!isValidWeight(weight)) throw new IllegalArgumentException("Invalid weight");
-        ContentValues v = new ContentValues(); v.put("date", date); v.put("weight", weight);
-        getWritableDatabase().insertWithOnConflict(TABLE, null, v, SQLiteDatabase.CONFLICT_REPLACE);
-        AutoBackupScheduler.backupIfEnabled(context);
-    }
+    public void save(String date,double weight){save(date,weight,Measurement.localMidnight(date));}
+    public void save(String date,double weight,long measuredAt){if(!isValidWeight(weight)||date==null||!date.matches("\\d{4}-\\d{2}-\\d{2}")||measuredAt<0)throw new IllegalArgumentException("Invalid weight measurement");ContentValues v=new ContentValues();v.put("date",date);v.put("weight",weight);v.put("measured_at",measuredAt);getWritableDatabase().insertWithOnConflict(TABLE,null,v,SQLiteDatabase.CONFLICT_REPLACE);AutoBackupScheduler.backupIfEnabled(context);}
+    public void updateMeasurementTime(String date,long measuredAt){if(measuredAt<0)throw new IllegalArgumentException("Invalid measurement time");ContentValues v=new ContentValues();v.put("measured_at",measuredAt);if(getWritableDatabase().update(TABLE,v,"date=?",new String[]{date})==0)throw new IllegalArgumentException("Measurement not found");AutoBackupScheduler.backupIfEnabled(context);}
 
-    public void saveWater(String date, int amountMl) {
-        if (date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}") || !isValidWaterAmount(amountMl))
-            throw new IllegalArgumentException("Invalid water event");
-        ContentValues values = new ContentValues();
-        values.put("date", date); values.put("amount_ml", amountMl); values.put("created_at", System.currentTimeMillis());
-        getWritableDatabase().insertOrThrow(WATER_TABLE, null, values);
-        AutoBackupScheduler.backupIfEnabled(context);
-    }
+    public void saveWater(String date,int amountMl){saveWater(date,amountMl,System.currentTimeMillis());}
+    public void saveWater(String date,int amountMl,long measuredAt){if(date==null||!date.matches("\\d{4}-\\d{2}-\\d{2}")||!isValidWaterAmount(amountMl)||measuredAt<0)throw new IllegalArgumentException("Invalid water event");ContentValues v=new ContentValues();v.put("date",date);v.put("amount_ml",amountMl);v.put("created_at",measuredAt);getWritableDatabase().insertOrThrow(WATER_TABLE,null,v);AutoBackupScheduler.backupIfEnabled(context);}
+    public void updateWaterEvent(long id,int amountMl,long measuredAt){if(!isValidWaterAmount(amountMl)||measuredAt<0)throw new IllegalArgumentException("Invalid water event");ContentValues v=new ContentValues();v.put("amount_ml",amountMl);v.put("created_at",measuredAt);if(getWritableDatabase().update(WATER_TABLE,v,"_id=?",new String[]{String.valueOf(id)})==0)throw new IllegalArgumentException("Water event not found");AutoBackupScheduler.backupIfEnabled(context);}
 
     public List<WaterEvent> allWaterEvents() {
         List<WaterEvent> result = new ArrayList<>();
@@ -99,9 +94,11 @@ public class WeightDatabase extends SQLiteOpenHelper {
         AutoBackupScheduler.backupIfEnabled(context);
     }
 
-    public void saveSport(String date,String type,int durationMinutes,double distanceKm){if(date==null||!date.matches("\\d{4}-\\d{2}-\\d{2}")||!isValidSport(type,durationMinutes,distanceKm))throw new IllegalArgumentException("Invalid sport event");ContentValues v=new ContentValues();v.put("date",date);v.put("type",type);v.put("duration_minutes",durationMinutes);v.put("distance_km",distanceKm);v.put("created_at",System.currentTimeMillis());getWritableDatabase().insertOrThrow(SPORT_TABLE,null,v);AutoBackupScheduler.backupIfEnabled(context);}
+    public void saveSport(String date,String type,int durationMinutes,double distanceKm){saveSport(date,type,durationMinutes,distanceKm,System.currentTimeMillis());}
+    public void saveSport(String date,String type,int durationMinutes,double distanceKm,long measuredAt){if(date==null||!date.matches("\\d{4}-\\d{2}-\\d{2}")||!isValidSport(type,durationMinutes,distanceKm)||measuredAt<0)throw new IllegalArgumentException("Invalid sport event");ContentValues v=new ContentValues();v.put("date",date);v.put("type",type);v.put("duration_minutes",durationMinutes);v.put("distance_km",distanceKm);v.put("created_at",measuredAt);getWritableDatabase().insertOrThrow(SPORT_TABLE,null,v);AutoBackupScheduler.backupIfEnabled(context);}
     public List<SportEvent> allSportEvents(){List<SportEvent> out=new ArrayList<>();Cursor c=getReadableDatabase().query(SPORT_TABLE,new String[]{"_id","date","type","duration_minutes","distance_km","created_at"},null,null,null,null,"date ASC, created_at ASC, _id ASC");try{while(c.moveToNext())out.add(new SportEvent(c.getLong(0),c.getString(1),c.getString(2),c.getInt(3),c.getDouble(4),c.getLong(5)));}finally{c.close();}return out;}
-    public void updateSportEvent(long id,String type,int durationMinutes,double distanceKm){if(!isValidSport(type,durationMinutes,distanceKm))throw new IllegalArgumentException("Invalid sport event");ContentValues v=new ContentValues();v.put("type",type);v.put("duration_minutes",durationMinutes);v.put("distance_km",distanceKm);int n=getWritableDatabase().update(SPORT_TABLE,v,"_id=?",new String[]{String.valueOf(id)});if(n==0)throw new IllegalArgumentException("Sport event not found");AutoBackupScheduler.backupIfEnabled(context);}
+    public void updateSportEvent(long id,String type,int durationMinutes,double distanceKm){updateSportEvent(id,type,durationMinutes,distanceKm,null);}
+    public void updateSportEvent(long id,String type,int durationMinutes,double distanceKm,Long measuredAt){if(!isValidSport(type,durationMinutes,distanceKm)||(measuredAt!=null&&measuredAt<0))throw new IllegalArgumentException("Invalid sport event");ContentValues v=new ContentValues();v.put("type",type);v.put("duration_minutes",durationMinutes);v.put("distance_km",distanceKm);if(measuredAt!=null)v.put("created_at",measuredAt);int n=getWritableDatabase().update(SPORT_TABLE,v,"_id=?",new String[]{String.valueOf(id)});if(n==0)throw new IllegalArgumentException("Sport event not found");AutoBackupScheduler.backupIfEnabled(context);}
     public void replaceSportEvents(List<SportEvent> events){SQLiteDatabase d=getWritableDatabase();d.beginTransaction();try{d.delete(SPORT_TABLE,null,null);for(SportEvent e:events){if(e==null||e.date==null||!e.date.matches("\\d{4}-\\d{2}-\\d{2}")||e.createdAt<0||!isValidSport(e.type,e.durationMinutes,e.distanceKm))throw new IllegalArgumentException("Invalid sport event");ContentValues v=new ContentValues();v.put("date",e.date);v.put("type",e.type);v.put("duration_minutes",e.durationMinutes);v.put("distance_km",e.distanceKm);v.put("created_at",e.createdAt);d.insertOrThrow(SPORT_TABLE,null,v);}d.setTransactionSuccessful();}finally{d.endTransaction();}AutoBackupScheduler.backupIfEnabled(context);}
     public int totalSportMinutesForDate(String date){Cursor c=getReadableDatabase().rawQuery("SELECT COALESCE(SUM(duration_minutes),0) FROM "+SPORT_TABLE+" WHERE date=?",new String[]{date});try{return c.moveToFirst()?c.getInt(0):0;}finally{c.close();}}
     public int totalWaterForDate(String date) {
@@ -132,7 +129,7 @@ public class WeightDatabase extends SQLiteOpenHelper {
             for (Measurement measurement : measurements) {
                 if (measurement == null || !isValidWeight(measurement.weight) || measurement.date == null || !measurement.date.matches("\\d{4}-\\d{2}-\\d{2}"))
                     throw new IllegalArgumentException("Invalid measurement");
-                ContentValues values = new ContentValues(); values.put("date", measurement.date); values.put("weight", measurement.weight);
+                ContentValues values = new ContentValues(); values.put("date", measurement.date); values.put("weight", measurement.weight); values.put("measured_at", measurement.measuredAt);
                 database.insertOrThrow(TABLE, null, values);
             }
             database.setTransactionSuccessful();
@@ -147,12 +144,12 @@ public class WeightDatabase extends SQLiteOpenHelper {
 
     public Measurement get(String date) {
         Cursor c = getReadableDatabase().query(TABLE, new String[]{"date", "weight"}, "date=?", new String[]{date}, null, null, null);
-        try { return c.moveToFirst() ? new Measurement(c.getString(0), c.getDouble(1)) : null; } finally { c.close(); }
+        try { return c.moveToFirst() ? new Measurement(c.getString(0), c.getDouble(1), c.getLong(2)) : null; } finally { c.close(); }
     }
 
     public List<Measurement> all() {
         List<Measurement> result = new ArrayList<>();
-        Cursor c = getReadableDatabase().query(TABLE, new String[]{"date", "weight"}, null, null, null, null, "date ASC");
+        Cursor c = getReadableDatabase().query(TABLE, new String[]{"date", "weight", "measured_at"}, null, null, null, null, "date ASC");
         try { while (c.moveToNext()) result.add(new Measurement(c.getString(0), c.getDouble(1))); } finally { c.close(); }
         return result;
     }
