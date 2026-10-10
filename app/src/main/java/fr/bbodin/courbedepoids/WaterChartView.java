@@ -78,7 +78,8 @@ public class WaterChartView extends View {
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(amount > 0 ? 0xFF147BEF : 0xFFE2EAF4);
             if (amount > 0) canvas.drawRoundRect(x - barWidth / 2f, y, x + barWidth / 2f, bottom, dp(4), dp(4), paint);
-            int labelStep = count <= 7 ? 1 : count <= 30 ? 5 : count <= 90 ? 15 : 60;\n            if (i % labelStep == 0 || i == count - 1) {
+            int labelStep = count <= 7 ? 1 : count <= 30 ? 5 : count <= 90 ? 15 : 60;
+            if (i % labelStep == 0 || i == count - 1) {
                 paint.setColor(0xFF7A8798); paint.setTextSize(dp(9));
                 String label = labelFmt.format(day.getTime());
                 float labelWidth = paint.measureText(label);
