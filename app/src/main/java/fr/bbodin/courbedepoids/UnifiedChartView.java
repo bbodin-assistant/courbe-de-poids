@@ -51,12 +51,22 @@ public class UnifiedChartView extends View {
         for (WeightDatabase.WaterEvent e:water) if(indexes.containsKey(e.date)) waterByDay.put(e.date,(waterByDay.containsKey(e.date)?waterByDay.get(e.date):0)+e.amountMl);
         Set<String> sportDays = new HashSet<>();
         for (WeightDatabase.SportEvent e:sports) if(indexes.containsKey(e.date)) sportDays.add(e.date);
-        List<WeightDatabase.Measurement> data = new ArrayList<>();
-        for (WeightDatabase.Measurement m:weights) if(indexes.containsKey(m.date)) data.add(m);
-        if(data.isEmpty()){empty(canvas,"Aucune mesure de poids sur cette période");return;}
+        String startKey=key.format(start.getTime()), endKey=key.format(end.getTime());
+        WeightDatabase.Measurement before=null, after=null;
+        List<WeightDatabase.Measurement> visible=new ArrayList<>();
+        for(WeightDatabase.Measurement m:weights){
+            if(m.date.compareTo(startKey)<0) before=m;
+            else if(m.date.compareTo(endKey)>0){if(after==null)after=m;}
+            else visible.add(m);
+        }
+        List<WeightDatabase.Measurement> data=new ArrayList<>();
+        if(before!=null)data.add(before);
+        data.addAll(visible);
+        if(after!=null)data.add(after);
 
         float left=dp(43),right=getWidth()-dp(8),top=dp(20),bottom=getHeight()-dp(62);
         if(right<=left||bottom<=top)return;
+        if(data.isEmpty()){drawPlaceholderCurve(canvas);return;}
         double min=Double.MAX_VALUE,max=-Double.MAX_VALUE;
         for(WeightDatabase.Measurement m:data){min=Math.min(min,m.weight);max=Math.max(max,m.weight);}
         double pad=Math.max(0.5,(max-min)*0.2);min=Math.floor((min-pad)*2)/2.0;max=Math.ceil((max+pad)*2)/2.0;if(max<=min)max=min+1;
@@ -66,14 +76,23 @@ public class UnifiedChartView extends View {
         for(int i=0;i<=4;i++){double value=max-(max-min)*i/4.0;float y=top+(bottom-top)*i/4f;canvas.drawText(String.format(Locale.FRANCE,"%.1f",value),0,y+dp(4),paint);}
 
         float[] xs=new float[data.size()],ys=new float[data.size()];int[] dayNumbers=new int[data.size()];
-        for(int i=0;i<data.size();i++){WeightDatabase.Measurement m=data.get(i);dayNumbers[i]=indexes.get(m.date);xs[i]=x(dayNumbers[i],left,right);ys[i]=(float)(bottom-(m.weight-min)/(max-min)*(bottom-top));}
-        Path line=new Path();line.moveTo(xs[0],ys[0]);
-        for(int i=1;i<xs.length;i++){float mid=(xs[i-1]+xs[i])/2f;line.cubicTo(mid,ys[i-1],mid,ys[i],xs[i],ys[i]);}
+        for(int i=0;i<data.size();i++){
+            WeightDatabase.Measurement m=data.get(i);Integer ix=indexes.get(m.date);
+            dayNumbers[i]=ix!=null?ix:(m.date.compareTo(startKey)<0?0:days-1);
+            xs[i]=x(dayNumbers[i],left,right);ys[i]=(float)(bottom-(m.weight-min)/(max-min)*(bottom-top));
+        }
+        Path line=new Path();
+        if(xs.length==1){line.moveTo(left,ys[0]);line.lineTo(right,ys[0]);}
+        else{line.moveTo(xs[0],ys[0]);for(int i=1;i<xs.length;i++){float mid=(xs[i-1]+xs[i])/2f;line.cubicTo(mid,ys[i-1],mid,ys[i],xs[i],ys[i]);}}
         Path area=new Path(line);area.lineTo(xs[xs.length-1],bottom);area.lineTo(xs[0],bottom);area.close();
         paint.setStyle(Paint.Style.FILL);paint.setColor(0x1873B7FF);canvas.drawPath(area,paint);
         paint.setStyle(Paint.Style.STROKE);paint.setColor(0xFF147BEF);paint.setStrokeWidth(dp(3));paint.setStrokeCap(Paint.Cap.ROUND);paint.setStrokeJoin(Paint.Join.ROUND);canvas.drawPath(line,paint);
         paint.setStyle(Paint.Style.FILL);
-        for(int i=0;i<xs.length;i++){paint.setColor(0xFFFFFFFF);canvas.drawCircle(xs[i],ys[i],dp(5.5f),paint);paint.setColor(0xFF147BEF);canvas.drawCircle(xs[i],ys[i],dp(3.5f),paint);}
+        for(int i=0;i<xs.length;i++){
+            if(data.get(i).date.compareTo(startKey)<0||data.get(i).date.compareTo(endKey)>0)continue;
+            paint.setColor(0xFFFFFFFF);canvas.drawCircle(xs[i],ys[i],dp(5.5f),paint);
+            paint.setColor(0xFF147BEF);canvas.drawCircle(xs[i],ys[i],dp(3.5f),paint);
+        }
         for(String date:sportDays){Integer ix=indexes.get(date);if(ix!=null)drawSport(canvas,x(ix,left,right),Math.max(top+dp(13),interpolate(ix,dayNumbers,ys)-dp(15)));}
 
         int step=days<=7?1:days<=30?5:days<=90?15:60;
@@ -90,6 +109,18 @@ public class UnifiedChartView extends View {
             canvas.drawText(amountLabel,Math.max(left,Math.min(xpos-amountWidth/2f,right-amountWidth)),bottom+dp(34),paint);
             labelDay.add(Calendar.DAY_OF_YEAR,1);
         }
+    }
+    private void drawPlaceholderCurve(Canvas c){
+        float left=dp(43),right=getWidth()-dp(8),top=dp(20),bottom=getHeight()-dp(62);
+        if(right<=left||bottom<=top)return;
+        paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(1));paint.setColor(0xFFE4EAF2);
+        for(int i=0;i<=4;i++)c.drawLine(left,top+(bottom-top)*i/4f,right,top+(bottom-top)*i/4f,paint);
+        float mid=(top+bottom)/2f;Path p=new Path();p.moveTo(left,mid+dp(9));
+        p.cubicTo(left+(right-left)*.25f,mid+dp(9),left+(right-left)*.25f,mid-dp(9),left+(right-left)*.5f,mid-dp(9));
+        p.cubicTo(left+(right-left)*.75f,mid-dp(9),left+(right-left)*.75f,mid+dp(9),right,mid+dp(9));
+        paint.setColor(0xFF94A3B8);paint.setStrokeWidth(dp(2.5f));paint.setPathEffect(new android.graphics.DashPathEffect(new float[]{dp(6),dp(5)},0));c.drawPath(p,paint);paint.setPathEffect(null);
+        paint.setStyle(Paint.Style.FILL);paint.setColor(0xFF718198);paint.setTextSize(dp(12));paint.setTextAlign(Paint.Align.CENTER);
+        c.drawText("Ajoutez une mesure pour tracer votre évolution",getWidth()/2f,bottom+dp(45),paint);paint.setTextAlign(Paint.Align.LEFT);
     }
     private float x(int index,float left,float right){return left+(index+0.5f)*(right-left)/days;}
     private float interpolate(int index,int[] indexes,float[] ys){
