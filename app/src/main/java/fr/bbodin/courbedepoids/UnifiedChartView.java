@@ -85,10 +85,10 @@ public class UnifiedChartView extends View {
         }
         Path line=new Path();
         if(xs.length==1){line.moveTo(left,ys[0]);line.lineTo(right,ys[0]);}
-        else{line.moveTo(xs[0],ys[0]);for(int i=1;i<xs.length;i++)line.lineTo(xs[i],ys[i]);}
+        else{line.moveTo(xs[0],ys[0]);for(int i=1;i<xs.length;i++){float mid=(xs[i-1]+xs[i])/2f;line.cubicTo(mid,ys[i-1],mid,ys[i],xs[i],ys[i]);}}
         Path area=new Path(line);area.lineTo(xs[xs.length-1],bottom);area.lineTo(xs[0],bottom);area.close();
-        paint.setStyle(Paint.Style.FILL);paint.setColor(0x1873B7FF);canvas.drawPath(area,paint);
-        paint.setStyle(Paint.Style.STROKE);paint.setColor(0xFF147BEF);paint.setStrokeWidth(dp(3));paint.setStrokeCap(Paint.Cap.ROUND);paint.setStrokeJoin(Paint.Join.ROUND);canvas.drawPath(line,paint);
+        paint.setStyle(Paint.Style.FILL);paint.setShader(new android.graphics.LinearGradient(0,top,0,bottom,0x6673B7FF,0x0873B7FF,android.graphics.Shader.TileMode.CLAMP));canvas.drawPath(area,paint);paint.setShader(null);
+        paint.setStyle(Paint.Style.STROKE);paint.setColor(0xFF147BEF);paint.setStrokeWidth(dp(3.5f));paint.setStrokeCap(Paint.Cap.ROUND);paint.setStrokeJoin(Paint.Join.ROUND);canvas.drawPath(line,paint);
         paint.setStyle(Paint.Style.FILL);
         for(int i=0;i<xs.length;i++){
             if(data.get(i).date.compareTo(startKey)<0||data.get(i).date.compareTo(endKey)>0)continue;
@@ -97,13 +97,13 @@ public class UnifiedChartView extends View {
         }
         for(String date:sportDays){Integer ix=indexes.get(date);if(ix!=null)drawSport(canvas,x(ix,left,right),Math.max(top+dp(13),interpolate(ix,dayNumbers,ys)-dp(15)));}
 
-        int step=days<=7?1:days<=30?5:days<=90?15:60;
+        int step=labelStep(right-left,days);
         Calendar labelDay=(Calendar)start.clone();
         SimpleDateFormat labelFormat=new SimpleDateFormat(days>90?"MMM yy":"dd/MM",Locale.FRANCE);
         for(int i=0;i<days;i++){
             if(i%step!=0&&i!=days-1){labelDay.add(Calendar.DAY_OF_YEAR,1);continue;}
             String date=key.format(labelDay.getTime());float xpos=x(i,left,right);
-            paint.setStyle(Paint.Style.FILL);paint.setColor(0xFF7A8798);paint.setTextSize(dp(days>90?9:9.5f));
+            paint.setStyle(Paint.Style.FILL);paint.setColor(0xFF7A8798);paint.setTextSize(dp(10));
             String label=labelFormat.format(labelDay.getTime());float width=paint.measureText(label);
             canvas.drawText(label,Math.max(left,Math.min(xpos-width/2f,right-width)),bottom+dp(17),paint);
             Integer amount=waterByDay.get(date);String amountLabel=amount==null?"—":String.format(Locale.FRANCE,"%.1fL",amount/1000.0);
@@ -124,6 +124,7 @@ public class UnifiedChartView extends View {
         paint.setStyle(Paint.Style.FILL);paint.setColor(0xFF718198);paint.setTextSize(dp(12));paint.setTextAlign(Paint.Align.CENTER);
         c.drawText("Ajoutez une mesure pour tracer votre évolution",getWidth()/2f,bottom+dp(45),paint);paint.setTextAlign(Paint.Align.LEFT);
     }
+    private int labelStep(float width,int count){int needed=Math.max(1,(int)Math.ceil(count/(width/dp(58))));int[] intervals={1,2,5,7,10,14,15,21,30,45,60,90,120,180};for(int interval:intervals)if(interval>=needed)return interval;return ((needed+179)/180)*180;}
     private float x(int index,float left,float right){return left+(index+0.5f)*(right-left)/days;}
     private float interpolate(int index,int[] indexes,float[] ys){
         if(index<=indexes[0])return ys[0];int last=indexes.length-1;if(index>=indexes[last])return ys[last];
