@@ -110,7 +110,7 @@ public class WeightChartView extends View {
         canvas.restore();
         paint.setColor(0xFF7A8798);paint.setTextSize(dp(10));
         SimpleDateFormat input=new SimpleDateFormat("yyyy-MM-dd",Locale.US),output=new SimpleDateFormat("dd/MM",Locale.FRANCE);
-        Calendar label=(Calendar)rangeStart.clone();int step=count<=7?1:count<=30?5:count<=90?15:60;
+        Calendar label=(Calendar)rangeStart.clone();int step=labelStep(right-left,count);
         for(int i=0;i<count;i+=step){drawDate(canvas,ChartRange.format(label),x(startDay+i,startDay,scaleX,left),left,right,bottom,input,output);label.add(Calendar.DAY_OF_YEAR,step);}
         if((count-1)%step!=0)drawDate(canvas,ChartRange.format(rangeEnd),x(endDay,startDay,scaleX,left),left,right,bottom,input,output);
     }
@@ -124,6 +124,7 @@ public class WeightChartView extends View {
         if(denominator==0)return null;double slope=numerator/denominator;
         return new Prediction(days[n-1],weights[n-1],slope);
     }
+    private int labelStep(float width,int count){int needed=Math.max(1,(int)Math.ceil(count/(width/dp(58))));int[] intervals={1,2,5,7,10,14,15,21,30,45,60,90,120,180};for(int interval:intervals)if(interval>=needed)return interval;return ((needed+179)/180)*180;}
     private int day(String value){return ChartRange.dayNumber(value);}
     private float x(int day,int startDay,float scale,float left){return left+(day-startDay+0.5f)*scale;}
     private float y(double value,double min,double max,float top,float bottom){return(float)(bottom-(value-min)/(max-min)*(bottom-top));}
