@@ -45,7 +45,7 @@ public class WeightChartView extends View {
         int startDay=day(ChartRange.format(rangeStart)),endDay=day(ChartRange.format(rangeEnd));
         if(startDay==Integer.MIN_VALUE||endDay<=startDay)return;
         int lastDay=day(data.get(data.size()-1).date);
-        int forecastEndDay=lastDay==Integer.MIN_VALUE?endDay:Math.min(endDay,lastDay+ChartRange.PREDICTION_DAYS);
+        int forecastEndDay=lastDay==Integer.MIN_VALUE?endDay:lastDay+ChartRange.PREDICTION_DAYS;
         List<Point> points=new ArrayList<>();
         double min=Double.MAX_VALUE,max=-Double.MAX_VALUE;
         // Draw the complete series. Canvas clipping, not data filtering, controls visibility.
