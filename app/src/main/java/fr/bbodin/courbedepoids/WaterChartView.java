@@ -78,9 +78,9 @@ public class WaterChartView extends View {
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(amount > 0 ? 0xFF147BEF : 0xFFE2EAF4);
             if (amount > 0) canvas.drawRoundRect(x - barWidth / 2f, y, x + barWidth / 2f, bottom, dp(4), dp(4), paint);
-            int labelStep = count <= 7 ? 1 : count <= 30 ? 5 : count <= 90 ? 15 : 60;
+            int labelStep = labelStep(right-left,count);
             if (i % labelStep == 0 || i == count - 1) {
-                paint.setColor(0xFF7A8798); paint.setTextSize(dp(9));
+                paint.setColor(0xFF7A8798); paint.setTextSize(dp(10));
                 String label = labelFmt.format(day.getTime());
                 float labelWidth = paint.measureText(label);
                 canvas.drawText(label, Math.max(left, Math.min(x - labelWidth / 2f, right - labelWidth)), bottom + dp(25), paint);
@@ -88,7 +88,8 @@ public class WaterChartView extends View {
             day.add(Calendar.DAY_OF_YEAR, 1);
         }
     }
-    private void clearTime(Calendar c) {
+    private int labelStep(float width,int count) { int needed=Math.max(1,(int)Math.ceil(count/(width/dp(58)))); int[] intervals={1,2,5,7,10,14,15,21,30,45,60,90,120,180}; for(int interval:intervals)if(interval>=needed)return interval; return ((needed+179)/180)*180; }
+    private void clearTime(Calendar c) {}
         c.set(Calendar.HOUR_OF_DAY, 0); c.set(Calendar.MINUTE, 0);
         c.set(Calendar.SECOND, 0); c.set(Calendar.MILLISECOND, 0);
     }
