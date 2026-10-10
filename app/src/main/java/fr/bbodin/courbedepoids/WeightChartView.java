@@ -48,15 +48,8 @@ public class WeightChartView extends View {
         int forecastEndDay=lastDay==Integer.MIN_VALUE?endDay:Math.min(endDay,lastDay+ChartRange.PREDICTION_DAYS);
         List<Point> points=new ArrayList<>();
         double min=Double.MAX_VALUE,max=-Double.MAX_VALUE;
-        int firstVisible=data.size(), lastVisible=-1;
-        for(int i=0;i<data.size();i++){
-            int d=day(data.get(i).date);
-            if(d!=Integer.MIN_VALUE&&d>=startDay&&d<=endDay){firstVisible=Math.min(firstVisible,i);lastVisible=i;}
-        }
-        int from=firstVisible==data.size()?0:Math.max(0,firstVisible-1);
-        int to=lastVisible<0?data.size()-1:Math.min(data.size()-1,lastVisible+1);
-        for(int i=from;i<=to;i++){
-            WeightDatabase.Measurement m=data.get(i);
+        // Draw the complete series. Canvas clipping, not data filtering, controls visibility.
+        for(WeightDatabase.Measurement m:data){
             int d=day(m.date);
             if(d==Integer.MIN_VALUE)continue;
             Point p=new Point(d,m.weight,m.date);
@@ -64,9 +57,10 @@ public class WeightChartView extends View {
         }
         if(points.isEmpty()){drawEmpty(canvas,"Aucune mesure sur cette période");return;}
         Prediction prediction=prediction(data);
-        if(prediction!=null&&forecastEndDay>=lastDay){
-            double projected=prediction.valueAt(forecastEndDay);
-            min=Math.min(min,projected);max=Math.max(max,projected);
+        if(prediction!=null&&lastDay!=Integer.MIN_VALUE){
+            double projected=prediction.valueAt(lastDay+ChartRange.PREDICTION_DAYS);
+            min=Math.min(min,Math.min(prediction.baseWeight,projected));
+            max=Math.max(max,Math.max(prediction.baseWeight,projected));
         }
         double pad=Math.max(0.5,(max-min)*0.22);
         min=Math.floor((min-pad)*2)/2.0;max=Math.ceil((max+pad)*2)/2.0;if(max<=min)max=min+1;
@@ -76,15 +70,14 @@ public class WeightChartView extends View {
         for(int i=0;i<=4;i++){double v=max-(max-min)*i/4d;float y=top+(bottom-top)*i/4f;canvas.drawText(String.format(Locale.FRANCE,"%.1f",v),0,y+dp(4),paint);}
         float scaleX=(right-left)/(endDay-startDay);
         Path line=new Path();boolean started=false;
-        for(Point p:points){
-            float px=x(p.day,startDay,scaleX,left),py=y(p.weight,min,max,top,bottom);
+        Point previous=null;
+        for(Point point:points){
+            float px=x(point.day,startDay,scaleX,left),py=y(point.weight,min,max,top,bottom);
             if(!started){line.moveTo(px,py);started=true;}else{
-                // Cubic interpolation stays continuous when points lie outside the viewport.
-                // The canvas clip reveals the correct segment while scrolling.
-                Point previous=points.get(points.indexOf(p)-1);
                 float prevX=x(previous.day,startDay,scaleX,left),prevY=y(previous.weight,min,max,top,bottom),mid=(prevX+px)/2f;
                 line.cubicTo(mid,prevY,mid,py,px,py);
             }
+            previous=point;
         }
         canvas.save();canvas.clipRect(left,top,right,bottom);
         Path area=new Path(line);
@@ -106,7 +99,6 @@ public class WeightChartView extends View {
         }
         for(Point p:points){
             float px=x(p.day,startDay,scaleX,left);
-            if(px<left-dp(7)||px>right+dp(7))continue;
             float py=y(p.weight,min,max,top,bottom);
             paint.setStyle(Paint.Style.FILL);paint.setColor(0xFFFFFFFF);canvas.drawCircle(px,py,dp(6.5f),paint);paint.setColor(0xFF147BEF);canvas.drawCircle(px,py,dp(4.5f),paint);
         }
