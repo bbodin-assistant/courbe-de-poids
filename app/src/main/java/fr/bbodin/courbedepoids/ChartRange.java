@@ -13,7 +13,7 @@ final class ChartRange {
     static final int MAX_VISIBLE_DAYS = 3650;
     static final int MIN_END_OFFSET_DAYS = -3650;
     static final int MAX_END_OFFSET_DAYS = 36500;
-    static final int PREDICTION_DAYS = 14;
+    static final int PREDICTION_DAYS = 15;
 
     final Calendar start;
     final Calendar end;
@@ -40,7 +40,8 @@ final class ChartRange {
         int first = dayNumber(firstDate), last = dayNumber(lastDate), now = dayNumber(format(today));
         if (first == Integer.MIN_VALUE || last == Integer.MIN_VALUE || first > last)
             return new int[]{MIN_END_OFFSET_DAYS, MAX_END_OFFSET_DAYS};
-        int minOffset = now - last - PREDICTION_DAYS;
+        int forecastEnd = Math.max(now, last) + PREDICTION_DAYS;
+        int minOffset = now - forecastEnd;
         int maxOffset = now - first - clampVisibleDays(visibleDays) + 1;
         if (minOffset > maxOffset) minOffset = maxOffset;
         return new int[]{clampEndOffsetDays(minOffset), clampEndOffsetDays(maxOffset)};

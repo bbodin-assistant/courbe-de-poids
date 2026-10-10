@@ -179,7 +179,9 @@ public class HomeFragment extends Fragment {
         if (!all.isEmpty()) {
             int firstDay = ChartRange.dayNumber(all.get(0).date);
             int lastDay = ChartRange.dayNumber(all.get(all.size() - 1).date);
-            int availableHistory = firstDay == Integer.MIN_VALUE || lastDay == Integer.MIN_VALUE ? 7 : Math.max(7, lastDay - firstDay + 1 + ChartRange.PREDICTION_DAYS);
+            int todayDay = ChartRange.dayNumber(ChartRange.format(Calendar.getInstance()));
+            int forecastEnd = Math.max(todayDay, lastDay) + ChartRange.PREDICTION_DAYS;
+            int availableHistory = firstDay == Integer.MIN_VALUE || lastDay == Integer.MIN_VALUE || todayDay == Integer.MIN_VALUE ? 7 : Math.max(7, forecastEnd - firstDay + 1);
             maxVisibleChartDays = ChartRange.clampVisibleDays(availableHistory);
             visibleDays = Math.min(visibleDays, maxVisibleChartDays);
             int[] bounds = ChartRange.allowedOffsets(Calendar.getInstance(), all.get(0).date, all.get(all.size() - 1).date, visibleDays);

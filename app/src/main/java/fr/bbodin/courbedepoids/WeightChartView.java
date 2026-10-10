@@ -45,7 +45,8 @@ public class WeightChartView extends View {
         int startDay=day(ChartRange.format(rangeStart)),endDay=day(ChartRange.format(rangeEnd));
         if(startDay==Integer.MIN_VALUE||endDay<=startDay)return;
         int lastDay=day(data.get(data.size()-1).date);
-        int forecastEndDay=lastDay==Integer.MIN_VALUE?endDay:lastDay+ChartRange.PREDICTION_DAYS;
+        int todayDay=day(ChartRange.format(Calendar.getInstance()));
+        int forecastEndDay=lastDay==Integer.MIN_VALUE||todayDay==Integer.MIN_VALUE?endDay:Math.max(lastDay,todayDay)+ChartRange.PREDICTION_DAYS;
         List<Point> points=new ArrayList<>();
         double min=Double.MAX_VALUE,max=-Double.MAX_VALUE;
         // Draw the complete series. Canvas clipping, not data filtering, controls visibility.
@@ -58,7 +59,7 @@ public class WeightChartView extends View {
         if(points.isEmpty()){drawEmpty(canvas,"Aucune mesure sur cette période");return;}
         Prediction prediction=prediction(data);
         if(prediction!=null&&lastDay!=Integer.MIN_VALUE){
-            double projected=prediction.valueAt(lastDay+ChartRange.PREDICTION_DAYS);
+            double projected=prediction.valueAt(forecastEndDay);
             min=Math.min(min,Math.min(prediction.baseWeight,projected));
             max=Math.max(max,Math.max(prediction.baseWeight,projected));
         }
@@ -90,7 +91,7 @@ public class WeightChartView extends View {
         area.lineTo(x(last.day,startDay,scaleX,left),bottom);area.lineTo(x(first.day,startDay,scaleX,left),bottom);area.close();
         paint.setStyle(Paint.Style.FILL);paint.setShader(new LinearGradient(0,top,0,bottom,0x6673B7FF,0x0873B7FF,Shader.TileMode.CLAMP));canvas.drawPath(area,paint);paint.setShader(null);
         paint.setStyle(Paint.Style.STROKE);paint.setColor(0xFF147BEF);paint.setStrokeWidth(dp(3.5f));paint.setStrokeCap(Paint.Cap.ROUND);paint.setStrokeJoin(Paint.Join.ROUND);canvas.drawPath(line,paint);
-        // Forecast: least-squares trend of the last eight measurements, projected at most 14 days.
+        // Forecast: least-squares trend of the last eight measurements, projected through at least 15 days after today.
         if(prediction!=null&&forecastEndDay>lastDay){
             Point latest=null;
             for(Point p:points)if(p.day==lastDay)latest=p;
