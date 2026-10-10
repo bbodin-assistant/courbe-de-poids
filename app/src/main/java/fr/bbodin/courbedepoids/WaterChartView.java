@@ -47,7 +47,7 @@ public class WaterChartView extends View {
         for (Integer value : totals.values()) if (value > 0) { hasValue = true; break; }
         if (!hasValue) { drawEmpty(canvas, "Aucune consommation sur cette période"); return; }
 
-        float left = dp(38), right = getWidth() - dp(8), top = dp(18), bottom = getHeight() - dp(34);
+        float left = dp(43), right = getWidth() - dp(8), top = dp(18), bottom = getHeight() - dp(34);
         if (right <= left || bottom <= top) return;
         int maxMl = 0;
         for (Integer value : totals.values()) maxMl = Math.max(maxMl, value);
@@ -78,7 +78,7 @@ public class WaterChartView extends View {
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(amount > 0 ? 0xFF147BEF : 0xFFE2EAF4);
             if (amount > 0) canvas.drawRoundRect(x - barWidth / 2f, y, x + barWidth / 2f, bottom, dp(4), dp(4), paint);
-            if (count <= 30 || i % Math.max(1, count / 6) == 0 || i == count - 1) {
+            int labelStep = count <= 7 ? 1 : count <= 30 ? 5 : count <= 90 ? 15 : 60;\n            if (i % labelStep == 0 || i == count - 1) {
                 paint.setColor(0xFF7A8798); paint.setTextSize(dp(9));
                 String label = labelFmt.format(day.getTime());
                 float labelWidth = paint.measureText(label);
