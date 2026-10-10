@@ -78,12 +78,14 @@ public class UnifiedChartView extends View {
         float[] xs=new float[data.size()],ys=new float[data.size()];int[] dayNumbers=new int[data.size()];
         for(int i=0;i<data.size();i++){
             WeightDatabase.Measurement m=data.get(i);Integer ix=indexes.get(m.date);
-            dayNumbers[i]=ix!=null?ix:(m.date.compareTo(startKey)<0?0:days-1);
+            int measurementDay=ChartRange.dayNumber(m.date);
+            int startDayNumber=ChartRange.dayNumber(startKey);
+            dayNumbers[i]=measurementDay!=Integer.MIN_VALUE&&startDayNumber!=Integer.MIN_VALUE?measurementDay-startDayNumber:(ix!=null?ix:0);
             xs[i]=x(dayNumbers[i],left,right);ys[i]=(float)(bottom-(m.weight-min)/(max-min)*(bottom-top));
         }
         Path line=new Path();
         if(xs.length==1){line.moveTo(left,ys[0]);line.lineTo(right,ys[0]);}
-        else{line.moveTo(xs[0],ys[0]);for(int i=1;i<xs.length;i++){float mid=(xs[i-1]+xs[i])/2f;line.cubicTo(mid,ys[i-1],mid,ys[i],xs[i],ys[i]);}}
+        else{line.moveTo(xs[0],ys[0]);for(int i=1;i<xs.length;i++)line.lineTo(xs[i],ys[i]);}
         Path area=new Path(line);area.lineTo(xs[xs.length-1],bottom);area.lineTo(xs[0],bottom);area.close();
         paint.setStyle(Paint.Style.FILL);paint.setColor(0x1873B7FF);canvas.drawPath(area,paint);
         paint.setStyle(Paint.Style.STROKE);paint.setColor(0xFF147BEF);paint.setStrokeWidth(dp(3));paint.setStrokeCap(Paint.Cap.ROUND);paint.setStrokeJoin(Paint.Join.ROUND);canvas.drawPath(line,paint);

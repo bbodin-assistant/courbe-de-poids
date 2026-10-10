@@ -68,7 +68,7 @@ public class WeightChartView extends View {
         for(int i=0;i<=4;i++){float y=top+(bottom-top)*i/4f;canvas.drawLine(left,y,right,y,paint);}
         paint.setStyle(Paint.Style.FILL);paint.setColor(0xFF7A8798);paint.setTextSize(dp(10));paint.setTypeface(Typeface.DEFAULT);
         for(int i=0;i<=4;i++){double v=max-(max-min)*i/4d;float y=top+(bottom-top)*i/4f;canvas.drawText(String.format(Locale.FRANCE,"%.1f",v),0,y+dp(4),paint);}
-        float scaleX=(right-left)/(endDay-startDay);
+        float scaleX=(right-left)/(Math.max(endDay,lastDay+ChartRange.PREDICTION_DAYS)-startDay);
         Path line=new Path();boolean started=false;
         Point previous=null;
         for(Point point:points){
