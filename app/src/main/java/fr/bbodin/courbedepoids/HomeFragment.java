@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.CheckBox;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -21,7 +22,8 @@ public class HomeFragment extends Fragment {
     private WeightChartView chart;
     private WaterChartView waterChart;
     private SportChartView sportChart;
-    private UnifiedChartView overviewChart;
+    private WeightChartView overviewChart;
+    private CheckBox showWaterOverlay, showSportOverlay;
     private TextView currentWeight, weightChange, periodCaption;
     private int visibleDays = 7;
     private int endOffsetDays = 0;
@@ -41,6 +43,10 @@ public class HomeFragment extends Fragment {
         waterChart = view.findViewById(R.id.water_chart);
         sportChart = view.findViewById(R.id.sport_chart);
         overviewChart = view.findViewById(R.id.overview_chart);
+        showWaterOverlay = view.findViewById(R.id.show_water_overlay);
+        showSportOverlay = view.findViewById(R.id.show_sport_overlay);
+        showWaterOverlay.setOnCheckedChangeListener((button, checked) -> updateOverlayVisibility());
+        showSportOverlay.setOnCheckedChangeListener((button, checked) -> updateOverlayVisibility());
         currentWeight = view.findViewById(R.id.current_weight);
         weightChange = view.findViewById(R.id.weight_change);
         periodCaption = view.findViewById(R.id.weight_period_caption);
@@ -192,7 +198,8 @@ public class HomeFragment extends Fragment {
         syncGestures();
         waterChart.setData(waterEvents, visibleDays, endOffsetDays);
         sportChart.setData(sportEvents, visibleDays, endOffsetDays);
-        overviewChart.setData(all, waterEvents, sportEvents, visibleDays, endOffsetDays);
+        overviewChart.setOverlayData(waterEvents, sportEvents);
+        updateOverlayVisibility();
         updatePeriodStyles(root);
         if (all.isEmpty()) {
             maxVisibleChartDays = 7;
@@ -201,7 +208,8 @@ public class HomeFragment extends Fragment {
             weightChange.setText("Aucune variation");
             weightChange.setTextColor(Color.GRAY);
             chart.setData(all);
-            overviewChart.setData(all, db.allWaterEvents(), db.allSportEvents(), visibleDays, endOffsetDays);
+            overviewChart.setOverlayData(db.allWaterEvents(), db.allSportEvents());
+            overviewChart.setData(all);
             periodCaption.setText("Aucune mesure enregistrée");
             return;
         }
@@ -213,6 +221,7 @@ public class HomeFragment extends Fragment {
         List<WeightDatabase.Measurement> period = new ArrayList<>();
         for (WeightDatabase.Measurement m : all) if (range.contains(m.date)) period.add(m);
         chart.setData(all, range.start, range.end);
+        overviewChart.setData(all, range.start, range.end);
         periodCaption.setText(rangeLabel(rangeStart, rangeEnd));
         if (period.size() >= 2) {
             double delta = period.get(period.size() - 1).weight - period.get(0).weight;
@@ -224,6 +233,11 @@ public class HomeFragment extends Fragment {
             weightChange.setText("Pas assez de mesures");
             weightChange.setTextColor(Color.rgb(100, 116, 139));
         }
+    }
+
+    private void updateOverlayVisibility() {
+        if (overviewChart != null && showWaterOverlay != null && showSportOverlay != null)
+            overviewChart.setOverlayVisibility(showWaterOverlay.isChecked(), showSportOverlay.isChecked());
     }
 
     private String rangeLabel(Calendar start, Calendar end) {

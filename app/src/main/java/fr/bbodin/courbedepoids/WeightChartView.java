@@ -20,6 +20,9 @@ public class WeightChartView extends View {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private List<WeightDatabase.Measurement> data = new ArrayList<>();
     private Calendar rangeStart, rangeEnd;
+    private List<WeightDatabase.WaterEvent> waterOverlay = new ArrayList<>();
+    private List<WeightDatabase.SportEvent> sportOverlay = new ArrayList<>();
+    private boolean showWaterOverlay = true, showSportOverlay = true;
     public WeightChartView(Context c) { super(c); }
     public WeightChartView(Context c, AttributeSet a) { super(c,a); }
     public WeightChartView(Context c, AttributeSet a, int d) { super(c,a,d); }
@@ -35,12 +38,23 @@ public class WeightChartView extends View {
         rangeEnd=end==null?null:(Calendar)end.clone();
         invalidate();
     }
+    public void setOverlayData(List<WeightDatabase.WaterEvent> water, List<WeightDatabase.SportEvent> sports) {
+        waterOverlay = water == null ? new ArrayList<>() : new ArrayList<>(water);
+        sportOverlay = sports == null ? new ArrayList<>() : new ArrayList<>(sports);
+        invalidate();
+    }
+    public void setOverlayVisibility(boolean showWater, boolean showSport) {
+        showWaterOverlay = showWater;
+        showSportOverlay = showSport;
+        invalidate();
+    }
+    private boolean hasOverlays() { return showWaterOverlay || showSportOverlay; }
     private float dp(float v){return v*getResources().getDisplayMetrics().density;}
     @Override protected void onDraw(Canvas canvas){
         super.onDraw(canvas);
         if(data.isEmpty()){drawPlaceholderCurve(canvas);return;}
         if(rangeStart==null||rangeEnd==null){Calendar end=Calendar.getInstance();clearTime(end);rangeEnd=(Calendar)end.clone();rangeStart=(Calendar)end.clone();rangeStart.add(Calendar.DAY_OF_YEAR,-6);}
-        float left=dp(43),right=getWidth()-dp(8),top=dp(18),bottom=getHeight()-dp(34);
+        float left=dp(43),right=getWidth()-dp(8),top=dp(18),bottom=getHeight()-dp(hasOverlays()?60:34);
         if(right<=left||bottom<=top)return;
         int startDay=day(ChartRange.format(rangeStart)),endDay=day(ChartRange.format(rangeEnd));
         if(startDay==Integer.MIN_VALUE||endDay<=startDay)return;
@@ -109,11 +123,13 @@ public class WeightChartView extends View {
             paint.setStyle(Paint.Style.FILL);paint.setColor(0xFFFFFFFF);canvas.drawCircle(px,py,dp(6.5f),paint);paint.setColor(0xFF147BEF);canvas.drawCircle(px,py,dp(4.5f),paint);
         }
         canvas.restore();
+        if (hasOverlays()) drawOverlays(canvas, startDay, endDay, scaleX, left, right, bottom);
         paint.setColor(0xFF7A8798);paint.setTextSize(dp(10));
         SimpleDateFormat input=new SimpleDateFormat("yyyy-MM-dd",Locale.US),output=new SimpleDateFormat("dd/MM",Locale.FRANCE);
         Calendar label=(Calendar)rangeStart.clone();int step=labelStep(right-left,count);
-        for(int i=0;i<count;i+=step){drawDate(canvas,ChartRange.format(label),x(startDay+i,startDay,scaleX,left),left,right,bottom,input,output);label.add(Calendar.DAY_OF_YEAR,step);}
-        if((count-1)%step!=0)drawDate(canvas,ChartRange.format(rangeEnd),x(endDay,startDay,scaleX,left),left,right,bottom,input,output);
+        float dateOffset = dp(hasOverlays() ? 54 : 26);
+        for(int i=0;i<count;i+=step){drawDate(canvas,ChartRange.format(label),x(startDay+i,startDay,scaleX,left),left,right,bottom,input,output,dateOffset);label.add(Calendar.DAY_OF_YEAR,step);}
+        if((count-1)%step!=0)drawDate(canvas,ChartRange.format(rangeEnd),x(endDay,startDay,scaleX,left),left,right,bottom,input,output,dateOffset);
     }
     private Prediction prediction(List<WeightDatabase.Measurement> values){
         int n=Math.min(8,values.size());if(n<2)return null;
@@ -129,9 +145,43 @@ public class WeightChartView extends View {
     private int day(String value){return ChartRange.dayNumber(value);}
     private float x(int day,int startDay,float scale,float left){return left+(day-startDay+0.5f)*scale;}
     private float y(double value,double min,double max,float top,float bottom){return(float)(bottom-(value-min)/(max-min)*(bottom-top));}
-    private void drawDate(Canvas c,String raw,float x,float left,float right,float bottom,SimpleDateFormat in,SimpleDateFormat out){
+    private void drawDate(Canvas c,String raw,float x,float left,float right,float bottom,SimpleDateFormat in,SimpleDateFormat out,float offset){
         String label=raw;try{java.util.Date d=in.parse(raw);if(d!=null)label=out.format(d);}catch(Exception ignored){}
-        float w=paint.measureText(label);c.drawText(label,Math.max(left,Math.min(x-w/2f,right-w)),bottom+dp(26),paint);
+        float w=paint.measureText(label);c.drawText(label,Math.max(left,Math.min(x-w/2f,right-w)),bottom+offset,paint);
+    }
+    private void drawOverlays(Canvas canvas, int startDay, int endDay, float scaleX, float left, float right, float bottom) {
+        java.util.Map<String,Integer> waterByDay = new java.util.HashMap<>();
+        for (WeightDatabase.WaterEvent event : waterOverlay) {
+            int d = day(event.date);
+            if (showWaterOverlay && d >= startDay && d <= endDay)
+                waterByDay.put(event.date, waterByDay.getOrDefault(event.date, 0) + event.amountMl);
+        }
+        java.util.Map<String,Boolean> sportByDay = new java.util.HashMap<>();
+        if (showSportOverlay) for (WeightDatabase.SportEvent event : sportOverlay) {
+            int d = day(event.date);
+            if (d >= startDay && d <= endDay) sportByDay.put(event.date, true);
+        }
+        int maxWater = 1;
+        for (Integer amount : waterByDay.values()) maxWater = Math.max(maxWater, amount);
+        paint.setStyle(Paint.Style.FILL);
+        if (showWaterOverlay) {
+            for (java.util.Map.Entry<String,Integer> entry : waterByDay.entrySet()) {
+                int d = day(entry.getKey());
+                float px = x(d, startDay, scaleX, left);
+                float height = dp(15) * entry.getValue() / (float) maxWater;
+                paint.setColor(0xFF0891B2);
+                canvas.drawRoundRect(px - dp(3), bottom + dp(21) - height, px + dp(3), bottom + dp(21), dp(2), dp(2), paint);
+            }
+        }
+        if (showSportOverlay) {
+            for (String date : sportByDay.keySet()) {
+                float px = x(day(date), startDay, scaleX, left);
+                paint.setColor(0xFF147BEF);
+                canvas.drawCircle(px, bottom + dp(33), dp(3.5f), paint);
+                paint.setColor(0xFFFFFFFF);
+                canvas.drawCircle(px, bottom + dp(33), dp(1.5f), paint);
+            }
+        }
     }
     private void drawPlaceholderCurve(Canvas c){
         float left=dp(43),right=getWidth()-dp(8),top=dp(18),bottom=getHeight()-dp(34);
