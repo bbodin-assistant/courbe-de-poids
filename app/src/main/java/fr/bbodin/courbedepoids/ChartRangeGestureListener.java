@@ -25,7 +25,7 @@ public final class ChartRangeGestureListener implements View.OnTouchListener {
         if(k==MotionEvent.ACTION_DOWN){x=e.getX();y=e.getY();pinch=false;rem=0;return true;}
         if(k==MotionEvent.ACTION_POINTER_DOWN&&e.getPointerCount()>1){pinch=true;block();span=dist(e);float f=Math.max(0,Math.min(1,mid(e)/Math.max(1,a.getWidth())));anchor=-offset-days+1+f*(days-1);return true;}
         if(k==MotionEvent.ACTION_MOVE&&e.getPointerCount()>1){float s=dist(e);if(span>0&&s>0){int n=Math.max(3,Math.min(3650,Math.round(days*span/s)));float f=Math.max(0,Math.min(1,mid(e)/Math.max(1,a.getWidth())));span=s;send(n,Math.round(-anchor-(1-f)*(n-1)));}block();return true;}
-        if(k==MotionEvent.ACTION_MOVE&&!pinch){float nx=e.getX(),ny=e.getY(),dx=x-nx;if(Math.abs(dx)>Math.abs(ny-y)*1.15f){block();rem+=dx*days/Math.max(1,a.getWidth());int shift=Math.round(rem);if(shift!=0){rem-=shift;send(days,offset+shift);}}x=nx;y=ny;return true;}
+        if(k==MotionEvent.ACTION_MOVE&&!pinch){float nx=e.getX(),ny=e.getY(),dx=nx-x;if(Math.abs(dx)>Math.abs(ny-y)*1.15f){block();rem+=dx*days/Math.max(1,a.getWidth());int shift=Math.round(rem);if(shift!=0){rem-=shift;send(days,offset+shift);}}x=nx;y=ny;return true;}
         if(k==MotionEvent.ACTION_UP||k==MotionEvent.ACTION_CANCEL){pinch=false;rem=0;if(v.getParent()!=null)v.getParent().requestDisallowInterceptTouchEvent(false);}return true;
     }
     private float dist(MotionEvent e){float dx=e.getX(0)-e.getX(1),dy=e.getY(0)-e.getY(1);return(float)Math.sqrt(dx*dx+dy*dy);}
