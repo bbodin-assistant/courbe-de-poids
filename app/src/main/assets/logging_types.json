@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "types": [
+    {
+      "id": "poop",
+      "label": "Selles",
+      "icon": "💩",
+      "category": "health",
+      "fields": [
+        { "id": "consistency", "label": "Consistance", "type": "select", "required": true, "options": ["Dure", "Normale", "Molle", "Liquide"] },
+        { "id": "notes", "label": "Notes", "type": "text", "required": false }
+      ]
+    }
+  ]
+}

@@ -10,27 +10,10 @@ import java.util.List;
 
 public class WeightDatabase extends SQLiteOpenHelper {
     private static final String DB_NAME = "weight.db";
-    private static final int DB_VERSION = 4;
+    private static final int DB_VERSION = 5;
     private static final String TABLE = "measurements";
     private static final String WATER_TABLE = "water_events";
     private static final String SPORT_TABLE = "sport_events";
-    /**
-     * Allow-listed storage metadata for event deletion. New event kinds are added here,
-     * while callers continue using the same deleteEvent API.
-     */
-    public enum EventType {
-        WEIGHT(TABLE, "date"),
-        WATER(WATER_TABLE, "_id"),
-        SPORT(SPORT_TABLE, "_id");
-
-        private final String table;
-        private final String keyColumn;
-
-        EventType(String table, String keyColumn) {
-            this.table = table;
-            this.keyColumn = keyColumn;
-        }
-    }
     private static final double MAX_WEIGHT_KG = 500.0;
     private final Context context;
 
@@ -75,6 +58,7 @@ public class WeightDatabase extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE " + TABLE + " (date TEXT PRIMARY KEY, weight REAL NOT NULL, measured_at INTEGER NOT NULL DEFAULT 0)");
         createWaterTable(db);
         createSportTable(db);
+        createGenericEventsTable(db);
     }
 
     private void createWaterTable(SQLiteDatabase db) {
@@ -83,7 +67,16 @@ public class WeightDatabase extends SQLiteOpenHelper {
     }
 
     private void createSportTable(SQLiteDatabase db){db.execSQL("CREATE TABLE IF NOT EXISTS sport_events (_id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, type TEXT NOT NULL, duration_minutes INTEGER NOT NULL, distance_km REAL NOT NULL DEFAULT 0, created_at INTEGER NOT NULL)");db.execSQL("CREATE INDEX IF NOT EXISTS idx_sport_events_date ON sport_events (date)");}
-    @Override public void onUpgrade(SQLiteDatabase db,int oldVersion,int newVersion){if(oldVersion<2)createWaterTable(db);if(oldVersion<3)createSportTable(db);if(oldVersion<4){db.execSQL("ALTER TABLE "+TABLE+" ADD COLUMN measured_at INTEGER NOT NULL DEFAULT 0");Cursor c=db.query(TABLE,new String[]{"date"},null,null,null,null,null);try{while(c.moveToNext()){String date=c.getString(0);ContentValues v=new ContentValues();v.put("measured_at",Measurement.localMidnight(date));db.update(TABLE,v,"date=?",new String[]{date});}}finally{c.close();}}}
+    private void createGenericEventsTable(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS generic_events (_id INTEGER PRIMARY KEY AUTOINCREMENT, type_id TEXT NOT NULL, date TEXT NOT NULL, created_at INTEGER NOT NULL, payload TEXT NOT NULL)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_generic_events_date ON generic_events (date, created_at)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_generic_events_type ON generic_events (type_id)");
+    }
+    @Override public void onUpgrade(SQLiteDatabase db,int oldVersion,int newVersion){
+        if(oldVersion<2)createWaterTable(db); if(oldVersion<3)createSportTable(db);
+        if(oldVersion<4){db.execSQL("ALTER TABLE "+TABLE+" ADD COLUMN measured_at INTEGER NOT NULL DEFAULT 0");Cursor c=db.query(TABLE,new String[]{"date"},null,null,null,null,null);try{while(c.moveToNext()){String date=c.getString(0);ContentValues v=new ContentValues();v.put("measured_at",Measurement.localMidnight(date));db.update(TABLE,v,"date=?",new String[]{date});}}finally{c.close();}}
+        if(oldVersion<5)createGenericEventsTable(db);
+    }
 
     public void save(String date,double weight){save(date,weight,Measurement.localMidnight(date));}
     public void save(String date,double weight,long measuredAt){if(!isValidWeight(weight)||date==null||!date.matches("\\d{4}-\\d{2}-\\d{2}")||measuredAt<0)throw new IllegalArgumentException("Invalid weight measurement");ContentValues v=new ContentValues();v.put("date",date);v.put("weight",weight);v.put("measured_at",measuredAt);getWritableDatabase().insertWithOnConflict(TABLE,null,v,SQLiteDatabase.CONFLICT_REPLACE);AutoBackupScheduler.backupIfEnabled(context);}
@@ -154,20 +147,27 @@ public class WeightDatabase extends SQLiteOpenHelper {
         AutoBackupScheduler.backupIfEnabled(context);
     }
 
-    /**
-     * Deletes an event of any registered type. The event key is its date for weight
-     * measurements and its database ID for water/sport events.
-     */
-    public void deleteEvent(EventType type, String eventKey) {
-        if (type == null || eventKey == null || eventKey.trim().isEmpty()) {
-            throw new IllegalArgumentException("Event type and key are required");
-        }
-        int deleted = getWritableDatabase().delete(
-                type.table,
-                type.keyColumn + "=?",
-                new String[]{eventKey}
-        );
-        if (deleted > 0) AutoBackupScheduler.backupIfEnabled(context);
+    public static class GenericEvent {
+        public final long id; public final String typeId,date,payload; public final long createdAt;
+        public GenericEvent(long id,String typeId,String date,long createdAt,String payload){this.id=id;this.typeId=typeId;this.date=date;this.createdAt=createdAt;this.payload=payload;}
+    }
+    public long saveGenericEvent(String typeId,String date,long createdAt,String payload) {
+        if(typeId==null||!typeId.matches("[a-z][a-z0-9_]{0,39}")||date==null||!date.matches("\\d{4}-\\d{2}-\\d{2}")||createdAt<0||payload==null)throw new IllegalArgumentException("Invalid generic event");
+        ContentValues v=new ContentValues();v.put("type_id",typeId);v.put("date",date);v.put("created_at",createdAt);v.put("payload",payload);
+        long id=getWritableDatabase().insertOrThrow("generic_events",null,v);AutoBackupScheduler.backupIfEnabled(context);return id;
+    }
+    public List<GenericEvent> allGenericEvents() {
+        List<GenericEvent> out=new ArrayList<>();Cursor c=getReadableDatabase().query("generic_events",new String[]{"_id","type_id","date","created_at","payload"},null,null,null,null,"date DESC, created_at DESC, _id DESC");
+        try{while(c.moveToNext())out.add(new GenericEvent(c.getLong(0),c.getString(1),c.getString(2),c.getLong(3),c.getString(4)));}finally{c.close();}return out;
+    }
+    public void deleteEvent(String typeId,String eventKey) {
+        if(typeId==null||eventKey==null||eventKey.trim().isEmpty())throw new IllegalArgumentException("Event type and key are required");
+        SQLiteDatabase d=getWritableDatabase();int deleted;
+        if("weight".equals(typeId))deleted=d.delete(TABLE,"date=?",new String[]{eventKey});
+        else if("water".equals(typeId))deleted=d.delete(WATER_TABLE,"_id=?",new String[]{eventKey});
+        else if("sport".equals(typeId))deleted=d.delete(SPORT_TABLE,"_id=?",new String[]{eventKey});
+        else deleted=d.delete("generic_events","_id=? AND type_id=?",new String[]{eventKey,typeId});
+        if(deleted>0)AutoBackupScheduler.backupIfEnabled(context);
     }
 
     /** Updates all editable fields of an existing weight measurement. */
