@@ -137,8 +137,38 @@ public class WeightDatabase extends SQLiteOpenHelper {
         AutoBackupScheduler.backupIfEnabled(context);
     }
 
+    /** Deletes the weight measurement for a date. */
+    public void deleteMeasurement(String date) {
+        int deleted = getWritableDatabase().delete(TABLE, "date=?", new String[]{date});
+        if (deleted > 0) AutoBackupScheduler.backupIfEnabled(context);
+    }
+
+    /** Kept for callers using the original weight-only API. */
     public void delete(String date) {
-        getWritableDatabase().delete(TABLE, "date=?", new String[]{date});
+        deleteMeasurement(date);
+    }
+
+    /** Deletes one water entry by its stable database ID. */
+    public void deleteWaterEvent(long id) {
+        int deleted = getWritableDatabase().delete(WATER_TABLE, "_id=?", new String[]{String.valueOf(id)});
+        if (deleted > 0) AutoBackupScheduler.backupIfEnabled(context);
+    }
+
+    /** Deletes one sport entry by its stable database ID. */
+    public void deleteSportEvent(long id) {
+        int deleted = getWritableDatabase().delete(SPORT_TABLE, "_id=?", new String[]{String.valueOf(id)});
+        if (deleted > 0) AutoBackupScheduler.backupIfEnabled(context);
+    }
+
+    /** Updates all editable fields of an existing weight measurement. */
+    public void updateMeasurement(String date, double weight, long measuredAt) {
+        if (!isValidWeight(weight) || date == null || !date.matches("\\d{4}-\\d{2}-\\d{2}") || measuredAt < 0)
+            throw new IllegalArgumentException("Invalid weight measurement");
+        ContentValues values = new ContentValues();
+        values.put("weight", weight);
+        values.put("measured_at", measuredAt);
+        int updated = getWritableDatabase().update(TABLE, values, "date=?", new String[]{date});
+        if (updated == 0) throw new IllegalArgumentException("Measurement not found");
         AutoBackupScheduler.backupIfEnabled(context);
     }
 

@@ -71,9 +71,10 @@ public class AddMeasurementFragment extends Fragment {
 
     private void openDatePicker() {
         new DatePickerDialog(getActivity(), (picker, year, month, day) -> {
-            int h=date.get(Calendar.HOUR_OF_DAY),m=date.get(Calendar.MINUTE);date.set(year,month,day,h,m,0);
-            date.set(Calendar.HOUR_OF_DAY, 0); date.set(Calendar.MINUTE, 0);
-            date.set(Calendar.SECOND, 0); date.set(Calendar.MILLISECOND, 0);
+            int hour = date.get(Calendar.HOUR_OF_DAY);
+            int minute = date.get(Calendar.MINUTE);
+            date.set(year, month, day, hour, minute, 0);
+            date.set(Calendar.MILLISECOND, 0);
             updateDate();
         }, date.get(Calendar.YEAR), date.get(Calendar.MONTH), date.get(Calendar.DAY_OF_MONTH)).show();
     }
