@@ -17,9 +17,9 @@ public class HistoryFragment extends Fragment{
    .setMessage("Cette action est définitive.")
    .setNegativeButton("Annuler",null)
    .setPositiveButton("Supprimer",(dialog,which)->{
-    if(e.m!=null)db.deleteMeasurement(e.m.date);
-    else if(e.w!=null)db.deleteWaterEvent(e.w.id);
-    else db.deleteSportEvent(e.s.id);
+    if(e.m!=null)db.deleteEvent(WeightDatabase.EventType.WEIGHT,e.m.date);
+    else if(e.w!=null)db.deleteEvent(WeightDatabase.EventType.WATER,String.valueOf(e.w.id));
+    else db.deleteEvent(WeightDatabase.EventType.SPORT,String.valueOf(e.s.id));
     render();
     Toast.makeText(getActivity(),"Entrée supprimée.",Toast.LENGTH_SHORT).show();
    }).show();

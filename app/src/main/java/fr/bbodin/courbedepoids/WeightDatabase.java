@@ -14,6 +14,23 @@ public class WeightDatabase extends SQLiteOpenHelper {
     private static final String TABLE = "measurements";
     private static final String WATER_TABLE = "water_events";
     private static final String SPORT_TABLE = "sport_events";
+    /**
+     * Allow-listed storage metadata for event deletion. New event kinds are added here,
+     * while callers continue using the same deleteEvent API.
+     */
+    public enum EventType {
+        WEIGHT(TABLE, "date"),
+        WATER(WATER_TABLE, "_id"),
+        SPORT(SPORT_TABLE, "_id");
+
+        private final String table;
+        private final String keyColumn;
+
+        EventType(String table, String keyColumn) {
+            this.table = table;
+            this.keyColumn = keyColumn;
+        }
+    }
     private static final double MAX_WEIGHT_KG = 500.0;
     private final Context context;
 
@@ -137,26 +154,19 @@ public class WeightDatabase extends SQLiteOpenHelper {
         AutoBackupScheduler.backupIfEnabled(context);
     }
 
-    /** Deletes the weight measurement for a date. */
-    public void deleteMeasurement(String date) {
-        int deleted = getWritableDatabase().delete(TABLE, "date=?", new String[]{date});
-        if (deleted > 0) AutoBackupScheduler.backupIfEnabled(context);
-    }
-
-    /** Kept for callers using the original weight-only API. */
-    public void delete(String date) {
-        deleteMeasurement(date);
-    }
-
-    /** Deletes one water entry by its stable database ID. */
-    public void deleteWaterEvent(long id) {
-        int deleted = getWritableDatabase().delete(WATER_TABLE, "_id=?", new String[]{String.valueOf(id)});
-        if (deleted > 0) AutoBackupScheduler.backupIfEnabled(context);
-    }
-
-    /** Deletes one sport entry by its stable database ID. */
-    public void deleteSportEvent(long id) {
-        int deleted = getWritableDatabase().delete(SPORT_TABLE, "_id=?", new String[]{String.valueOf(id)});
+    /**
+     * Deletes an event of any registered type. The event key is its date for weight
+     * measurements and its database ID for water/sport events.
+     */
+    public void deleteEvent(EventType type, String eventKey) {
+        if (type == null || eventKey == null || eventKey.trim().isEmpty()) {
+            throw new IllegalArgumentException("Event type and key are required");
+        }
+        int deleted = getWritableDatabase().delete(
+                type.table,
+                type.keyColumn + "=?",
+                new String[]{eventKey}
+        );
         if (deleted > 0) AutoBackupScheduler.backupIfEnabled(context);
     }
 
