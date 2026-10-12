@@ -1,13 +1,16 @@
 package fr.bbodin.courbedepoids;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.text.InputType;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import org.json.JSONArray;
@@ -17,20 +20,20 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Builds and validates a logging form entirely from a registry definition. */
+/** Builds and validates a polished input form from a generic logging type definition. */
 final class ConfiguredLoggingForm {
     private final Context context;
     private final JSONArray fields;
     private final Map<String, View> controls = new LinkedHashMap<>();
-    private final ScrollView scroll;
+    private final LinearLayout content;
 
     ConfiguredLoggingForm(Context context, JSONObject type, JSONObject initialValues) {
         this.context = context;
         this.fields = type.optJSONArray("fields");
-        LinearLayout content = new LinearLayout(context);
+        content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
-        int pad = dp(18);
-        content.setPadding(pad, dp(8), pad, dp(8));
+        content.setPadding(0, dp(4), 0, dp(4));
+
         if (fields != null) {
             for (int i = 0; i < fields.length(); i++) {
                 JSONObject field = fields.optJSONObject(i);
@@ -38,54 +41,99 @@ final class ConfiguredLoggingForm {
                 String id = field.optString("id");
                 String kind = field.optString("type");
                 Object initial = initialValues == null ? null : initialValues.opt(id);
+
+                if ("boolean".equals(kind)) {
+                    CheckBox check = new CheckBox(context);
+                    check.setText(field.optString("label"));
+                    check.setTextColor(Color.rgb(20, 36, 58));
+                    check.setTextSize(15);
+                    check.setButtonTintList(android.content.res.ColorStateList.valueOf(Color.rgb(20, 123, 239)));
+                    check.setChecked(initial instanceof Boolean ? (Boolean) initial
+                            : initial != null && "true".equalsIgnoreCase(String.valueOf(initial)));
+                    LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, dp(52));
+                    cp.topMargin = dp(4);
+                    cp.bottomMargin = dp(6);
+                    content.addView(check, cp);
+                    controls.put(id, check);
+                    continue;
+                }
+
                 TextView label = new TextView(context);
-                label.setText(field.optString("label"));
-                label.setTextColor(android.graphics.Color.rgb(20, 36, 58));
-                content.addView(label);
+                label.setText(field.optString("label") + (field.optBoolean("required", false) ? "  *" : ""));
+                label.setTextColor(Color.rgb(51, 65, 85));
+                label.setTextSize(14);
+                label.setTypeface(null, Typeface.BOLD);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                lp.topMargin = dp(i == 0 ? 4 : 14);
+                lp.bottomMargin = dp(6);
+                content.addView(label, lp);
+
                 View control;
                 if ("select".equals(kind)) {
                     Spinner spinner = new Spinner(context);
                     List<String> options = new ArrayList<>();
-                    options.add("");
+                    options.add("Choisir…");
                     JSONArray configured = field.optJSONArray("options");
                     if (configured != null) {
                         for (int j = 0; j < configured.length(); j++) options.add(configured.optString(j));
                     }
-                    spinner.setAdapter(new ArrayAdapter<>(context, android.R.layout.simple_spinner_dropdown_item, options));
+                    ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+                            context, android.R.layout.simple_spinner_item, options) {
+                        @Override public View getView(int position, View convertView, ViewGroup parent) {
+                            TextView view = (TextView) super.getView(position, convertView, parent);
+                            view.setTextColor(Color.rgb(20, 36, 58));
+                            view.setTextSize(15);
+                            view.setPadding(dp(12), dp(8), dp(12), dp(8));
+                            return view;
+                        }
+                        @Override public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                            TextView view = (TextView) super.getDropDownView(position, convertView, parent);
+                            view.setTextColor(Color.rgb(20, 36, 58));
+                            view.setPadding(dp(14), dp(12), dp(14), dp(12));
+                            return view;
+                        }
+                    };
+                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    spinner.setAdapter(adapter);
                     if (initial != null) {
                         for (int j = 1; j < options.size(); j++) {
                             if (options.get(j).equals(String.valueOf(initial))) { spinner.setSelection(j); break; }
                         }
                     }
                     control = spinner;
-                } else if ("boolean".equals(kind)) {
-                    CheckBox check = new CheckBox(context);
-                    check.setText(field.optString("label"));
-                    check.setChecked(initial instanceof Boolean ? (Boolean) initial
-                            : initial != null && "true".equalsIgnoreCase(String.valueOf(initial)));
-                    control = check;
                 } else {
                     EditText input = new EditText(context);
-                    input.setHint(field.optString("label"));
+                    input.setTextColor(Color.rgb(20, 36, 58));
+                    input.setHintTextColor(Color.rgb(148, 163, 184));
+                    input.setTextSize(16);
+                    input.setPadding(dp(14), dp(10), dp(14), dp(10));
+                    input.setHint("Saisir " + field.optString("label").toLowerCase(java.util.Locale.FRANCE));
                     input.setSingleLine(!"text".equals(kind));
+                    input.setMinHeight(dp("text".equals(kind) ? 88 : 52));
+                    input.setBackground(roundedInput());
                     if ("number".equals(kind)) {
-                        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
+                        input.setInputType(InputType.TYPE_CLASS_NUMBER
+                                | InputType.TYPE_NUMBER_FLAG_DECIMAL
+                                | InputType.TYPE_NUMBER_FLAG_SIGNED);
                     } else {
-                        input.setInputType(InputType.TYPE_CLASS_TEXT | ("text".equals(kind) ? InputType.TYPE_TEXT_FLAG_MULTI_LINE : 0));
+                        input.setInputType(InputType.TYPE_CLASS_TEXT
+                                | ("text".equals(kind) ? InputType.TYPE_TEXT_FLAG_MULTI_LINE : 0));
                     }
                     if (initial != null && initial != JSONObject.NULL) input.setText(String.valueOf(initial));
                     control = input;
                 }
-                content.addView(control);
+                LinearLayout.LayoutParams controlParams = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        "text".equals(kind) ? dp(96) : dp(52));
+                content.addView(control, controlParams);
                 controls.put(id, control);
             }
         }
-        scroll = new ScrollView(context);
-        scroll.setFillViewport(true);
-        scroll.addView(content);
     }
 
-    View getView() { return scroll; }
+    View getView() { return content; }
 
     JSONObject readPayload() throws Exception {
         JSONObject payload = new JSONObject();
@@ -100,7 +148,8 @@ final class ConfiguredLoggingForm {
             boolean hasValue = false;
             if (control instanceof Spinner) {
                 Object selected = ((Spinner) control).getSelectedItem();
-                if (selected != null && !String.valueOf(selected).trim().isEmpty()) {
+                if (selected != null && !String.valueOf(selected).trim().isEmpty()
+                        && !"Choisir…".equals(String.valueOf(selected))) {
                     value = String.valueOf(selected);
                     hasValue = true;
                 }
@@ -113,9 +162,13 @@ final class ConfiguredLoggingForm {
                     if ("number".equals(kind)) {
                         double number;
                         try { number = Double.parseDouble(text.replace(',', '.')); }
-                        catch (NumberFormatException e) { throw new IllegalArgumentException("Nombre invalide : " + field.optString("label")); }
-                        if (field.has("min") && number < field.optDouble("min")) throw new IllegalArgumentException(field.optString("label") + " doit être supérieur ou égal à " + field.opt("min"));
-                        if (field.has("max") && number > field.optDouble("max")) throw new IllegalArgumentException(field.optString("label") + " doit être inférieur ou égal à " + field.opt("max"));
+                        catch (NumberFormatException e) {
+                            throw new IllegalArgumentException("Nombre invalide : " + field.optString("label"));
+                        }
+                        if (field.has("min") && number < field.optDouble("min"))
+                            throw new IllegalArgumentException(field.optString("label") + " doit être supérieur ou égal à " + field.opt("min"));
+                        if (field.has("max") && number > field.optDouble("max"))
+                            throw new IllegalArgumentException(field.optString("label") + " doit être inférieur ou égal à " + field.opt("max"));
                         value = number;
                     } else value = text;
                     hasValue = true;
@@ -127,6 +180,14 @@ final class ConfiguredLoggingForm {
             if (hasValue) payload.put(id, value);
         }
         return payload;
+    }
+
+    private GradientDrawable roundedInput() {
+        GradientDrawable shape = new GradientDrawable();
+        shape.setColor(Color.rgb(255, 255, 255));
+        shape.setCornerRadius(dp(14));
+        shape.setStroke(dp(1), Color.rgb(220, 231, 245));
+        return shape;
     }
 
     private int dp(int value) {
