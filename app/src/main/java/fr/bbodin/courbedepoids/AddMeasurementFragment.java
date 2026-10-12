@@ -124,7 +124,7 @@ public class AddMeasurementFragment extends Fragment {
         }).show();
     }
 
-    private void showMode(int mode){weightForm.setVisibility(View.GONE);waterForm.setVisibility(View.GONE);sportForm.setVisibility(View.GONE);weightMode.getParent().setVisibility(View.GONE);styleMode(weightMode,false);styleMode(waterMode,false);styleMode(sportMode,false);}
+    private void showMode(int mode){weightForm.setVisibility(View.GONE);waterForm.setVisibility(View.GONE);sportForm.setVisibility(View.GONE);((ViewGroup) weightMode.getParent()).setVisibility(View.GONE);styleMode(weightMode,false);styleMode(waterMode,false);styleMode(sportMode,false);}
 
     private void styleMode(View mode, boolean selected) {
         mode.setBackgroundResource(selected ? R.drawable.bg_primary_button : R.drawable.bg_input);
