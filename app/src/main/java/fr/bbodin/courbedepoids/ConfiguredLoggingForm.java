@@ -24,6 +24,8 @@ import java.util.Map;
 
 /** Builds and validates a polished input form from a generic logging type definition. */
 final class ConfiguredLoggingForm {
+    private static final int BLUE = Color.rgb(20, 123, 239);
+    private static final int INK = Color.rgb(20, 36, 58);
     private final Context context;
     private final JSONArray fields;
     private final Map<String, View> controls = new LinkedHashMap<>();
