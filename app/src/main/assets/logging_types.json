@@ -2,6 +2,74 @@
   "version": 1,
   "types": [
     {
+      "id": "weight",
+      "label": "Poids",
+      "icon": "⚖️",
+      "category": "body",
+      "fields": [
+        {
+          "id": "weight_kg",
+          "label": "Poids (kg)",
+          "type": "number",
+          "required": true,
+          "min": 0.1,
+          "max": 500
+        }
+      ]
+    },
+    {
+      "id": "water",
+      "label": "Eau",
+      "icon": "💧",
+      "category": "nutrition",
+      "fields": [
+        {
+          "id": "amount_ml",
+          "label": "Quantité (ml)",
+          "type": "number",
+          "required": true,
+          "min": 1,
+          "max": 10000
+        }
+      ]
+    },
+    {
+      "id": "sport",
+      "label": "Sport",
+      "icon": "🏃",
+      "category": "activity",
+      "fields": [
+        {
+          "id": "activity",
+          "label": "Activité",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Yoga",
+            "Course",
+            "Escalade",
+            "Workout"
+          ]
+        },
+        {
+          "id": "duration_minutes",
+          "label": "Durée (minutes)",
+          "type": "number",
+          "required": true,
+          "min": 1,
+          "max": 1440
+        },
+        {
+          "id": "distance_km",
+          "label": "Distance (km, course uniquement)",
+          "type": "number",
+          "required": false,
+          "min": 0,
+          "max": 1000
+        }
+      ]
+    },
+    {
       "id": "poop",
       "label": "Selles",
       "icon": "💩",

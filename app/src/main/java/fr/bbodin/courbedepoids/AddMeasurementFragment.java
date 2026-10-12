@@ -100,10 +100,11 @@ public class AddMeasurementFragment extends Fragment {
             scroll.addView(choices);
             sections.addView(scroll);
         }
-        ((ViewGroup) weightMode.getParent().getParent()).addView(sections, 2, new ViewGroup.LayoutParams(-1, -2));
+        ((ViewGroup) weightForm.getParent()).addView(sections, 1, new ViewGroup.LayoutParams(-1, -2));
     }
 
     private String categoryLabel(String category) {
+        if ("body".equals(category)) return "Corps";
         if ("health".equals(category)) return "Santé";
         if ("nutrition".equals(category)) return "Nutrition";
         if ("activity".equals(category)) return "Activité";
@@ -123,7 +124,7 @@ public class AddMeasurementFragment extends Fragment {
         }).show();
     }
 
-    private void showMode(int mode){weightForm.setVisibility(mode==0?View.VISIBLE:View.GONE);waterForm.setVisibility(mode==1?View.VISIBLE:View.GONE);sportForm.setVisibility(mode==2?View.VISIBLE:View.GONE);styleMode(weightMode,mode==0);styleMode(waterMode,mode==1);styleMode(sportMode,mode==2);}
+    private void showMode(int mode){weightForm.setVisibility(View.GONE);waterForm.setVisibility(View.GONE);sportForm.setVisibility(View.GONE);weightMode.getParent().setVisibility(View.GONE);styleMode(weightMode,false);styleMode(waterMode,false);styleMode(sportMode,false);}
 
     private void styleMode(View mode, boolean selected) {
         mode.setBackgroundResource(selected ? R.drawable.bg_primary_button : R.drawable.bg_input);
