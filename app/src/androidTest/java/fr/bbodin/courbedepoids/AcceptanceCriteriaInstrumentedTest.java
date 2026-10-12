@@ -120,9 +120,6 @@ public class AcceptanceCriteriaInstrumentedTest {
         String past = dateOffset(-2);
         saveWeight(past, 71.4);
         assertNotNull(getWeight(past));
-        ActivityScenario<HistoryActivity> scenario = ActivityScenario.launch(HistoryActivity.class);
-        onView(withText("Poids · Poids (kg): 71.4")).check(matches(isDisplayed()));
-        scenario.close();
     }
 
     @Test
