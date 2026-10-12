@@ -60,7 +60,7 @@ public class AcceptanceCriteriaInstrumentedTest {
     @Before
     public void resetState() {
         context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        context.deleteDatabase("weight.db");
+        context.deleteDatabase("logging.db");
         context.getSharedPreferences("settings", Context.MODE_PRIVATE)
                 .edit().clear().commit();
         NotificationManager nm = context.getSystemService(NotificationManager.class);
