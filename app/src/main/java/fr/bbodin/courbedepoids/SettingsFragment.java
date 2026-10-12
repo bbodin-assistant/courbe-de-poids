@@ -174,9 +174,10 @@ public class SettingsFragment extends Fragment {
     private void writeExport(Uri uri) throws Exception {
         try (OutputStream out = getActivity().getContentResolver().openOutputStream(uri)) {
             if (out == null) throw new IllegalStateException("No output stream");
-            out.write("date,weight_kg\n".getBytes(StandardCharsets.UTF_8));
-            for (WeightDatabase.Measurement measurement : db.all()) {
-                String row = measurement.date + "," + String.format(Locale.US, "%.2f", measurement.weight) + "\n";
+            out.write("type_id,date,created_at,payload_base64\n".getBytes(StandardCharsets.UTF_8));
+            for (WeightDatabase.GenericEvent event : db.allGenericEvents()) {
+                String payload = java.util.Base64.getEncoder().encodeToString(event.payload.getBytes(StandardCharsets.UTF_8));
+                String row = event.typeId + "," + event.date + "," + event.createdAt + "," + payload + "\n";
                 out.write(row.getBytes(StandardCharsets.UTF_8));
             }
         }
@@ -203,17 +204,19 @@ public class SettingsFragment extends Fragment {
         int imported = 0;
         for (String rawLine : fileContent.split("\\r?\\n")) {
             String row = rawLine.trim();
-            if (row.isEmpty() || row.toLowerCase(Locale.ROOT).startsWith("date,")) continue;
-            String[] columns = row.split(",");
-            if (columns.length < 2 || !columns[0].trim().matches("\\d{4}-\\d{2}-\\d{2}")) continue;
+            if (row.isEmpty() || row.toLowerCase(Locale.ROOT).startsWith("type_id,")) continue;
+            String[] columns = row.split(",", -1);
+            if (columns.length != 4 || !columns[1].trim().matches("\\d{4}-\\d{2}-\\d{2}")) continue;
             try {
-                double weight = Double.parseDouble(columns[1].trim().replace(',', '.'));
-                if (!WeightDatabase.isValidWeight(weight)) continue;
-                db.save(columns[0].trim(), weight);
+                String typeId = columns[0].trim();
+                long createdAt = Long.parseLong(columns[2].trim());
+                String payload = new String(java.util.Base64.getDecoder().decode(columns[3].trim()), StandardCharsets.UTF_8);
+                if (!WeightDatabase.isValidGenericEvent(typeId, columns[1].trim(), createdAt, payload)) continue;
+                db.saveGenericEvent(typeId, columns[1].trim(), createdAt, payload);
                 imported++;
-            } catch (NumberFormatException ignored) { }
+            } catch (IllegalArgumentException ignored) { }
         }
-        if (imported == 0) throw new IllegalArgumentException("Aucune mesure CSV valide trouvée");
-        Toast.makeText(getActivity(), imported + " mesure(s) importée(s) depuis le CSV.", Toast.LENGTH_LONG).show();
+        if (imported == 0) throw new IllegalArgumentException("Aucun événement générique CSV valide trouvé");
+        Toast.makeText(getActivity(), imported + " événement(s) importé(s) depuis le CSV.", Toast.LENGTH_LONG).show();
     }
 }

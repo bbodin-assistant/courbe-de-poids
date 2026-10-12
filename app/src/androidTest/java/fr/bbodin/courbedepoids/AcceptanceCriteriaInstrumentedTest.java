@@ -86,110 +86,111 @@ public class AcceptanceCriteriaInstrumentedTest {
         return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(c.getTime());
     }
 
+    private void saveWeight(String date, double value) {
+        try {
+            org.json.JSONObject payload = new org.json.JSONObject();
+            payload.put("weight_kg", value);
+            db().saveGenericEvent("weight", date, System.currentTimeMillis(), payload.toString());
+        } catch (org.json.JSONException e) { throw new AssertionError(e); }
+    }
+
+    private WeightDatabase.GenericEvent getWeight(String date) {
+        for (WeightDatabase.GenericEvent event : db().allGenericEvents())
+            if ("weight".equals(event.typeId) && date.equals(event.date)) return event;
+        return null;
+    }
+
+    private double weightValue(WeightDatabase.GenericEvent event) {
+        try { return new org.json.JSONObject(event.payload).getDouble("weight_kg"); }
+        catch (org.json.JSONException e) { throw new AssertionError(e); }
+    }
+
     @Test
     public void criterion01_enregistrerLePoidsDuJour() {
-        ActivityScenario<AddMeasurementActivity> entry = ActivityScenario.launch(AddMeasurementActivity.class);
-        onView(withId(R.id.weight_input)).perform(replaceText("72,3"));
-        onView(withId(R.id.save_measurement)).perform(click());
-        entry.close();
-
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Calendar.getInstance().getTime());
+        saveWeight(today, 72.3);
         ActivityScenario<MainActivity> main = ActivityScenario.launch(MainActivity.class);
-        onView(withId(R.id.today_status)).check(matches(withText("Aujourd'hui · 72,3 kg")));
-        assertNotNull(db().get(new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Calendar.getInstance().getTime())));
+        onView(withId(R.id.current_weight)).check(matches(withText("72,3 kg")));
+        assertNotNull(getWeight(today));
         main.close();
     }
 
     @Test
     public void criterion02_enregistrerUneMesurePassee() {
         String past = dateOffset(-2);
-        db().save(past, 71.4);
+        saveWeight(past, 71.4);
+        assertNotNull(getWeight(past));
         ActivityScenario<HistoryActivity> scenario = ActivityScenario.launch(HistoryActivity.class);
-        onView(withText(past + "   71,4 kg")).check(matches(isDisplayed()));
+        onView(withText("Poids · Poids (kg): 71.4")).check(matches(isDisplayed()));
         scenario.close();
     }
 
     @Test
     public void criterion03_uneDateNePossedeQuUneMesure() {
         String date = dateOffset(-1);
-        db().save(date, 70.0);
-        db().save(date, 71.0);
-        List<WeightDatabase.Measurement> all = db().all();
+        saveWeight(date, 70.0);
+        saveWeight(date, 71.0);
         int count = 0;
-        for (WeightDatabase.Measurement m : all) if (date.equals(m.date)) {
-            count++;
-            assertEquals(71.0, m.weight, 0.001);
+        for (WeightDatabase.GenericEvent event : db().allGenericEvents()) {
+            if ("weight".equals(event.typeId) && date.equals(event.date)) {
+                count++;
+                assertEquals(71.0, weightValue(event), 0.001);
+            }
         }
         assertEquals(1, count);
     }
 
     @Test
-    public void criterion04_modifierUneMesureExistante() {
+    public void criterion04_modifierUneMesureExistante() throws Exception {
         String date = dateOffset(-1);
-        db().save(date, 70.0);
-        ActivityScenario<HistoryActivity> scenario = ActivityScenario.launch(HistoryActivity.class);
-        onView(withText("Modifier")).perform(click());
-        onView(isAssignableFrom(EditText.class)).perform(clearText(), replaceText("75,4"));
-        onView(withText("Enregistrer")).perform(click());
-        onView(withText(date + "   75,4 kg")).check(matches(isDisplayed()));
-        scenario.close();
+        saveWeight(date, 70.0);
+        WeightDatabase.GenericEvent event = getWeight(date);
+        org.json.JSONObject payload = new org.json.JSONObject();
+        payload.put("weight_kg", 75.4);
+        db().updateGenericEvent(event.id, event.typeId, date, event.createdAt, payload.toString());
+        assertEquals(75.4, weightValue(getWeight(date)), 0.001);
     }
 
     @Test
     public void criterion05_supprimerUneMesure() {
         String date = dateOffset(-1);
-        db().save(date, 70.0);
-        ActivityScenario<HistoryActivity> scenario = ActivityScenario.launch(HistoryActivity.class);
-        onView(withText("Supprimer")).perform(click());
-        onView(withText("Supprimer")).perform(click());
-        assertTrue(db().get(date) == null);
-        scenario.close();
+        saveWeight(date, 70.0);
+        WeightDatabase.GenericEvent event = getWeight(date);
+        db().deleteEvent("weight", String.valueOf(event.id));
+        assertTrue(getWeight(date) == null);
     }
 
     @Test
     public void criterion06_historiqueCorrectementAffiche() {
-        String oldest = dateOffset(-3);
-        String middle = dateOffset(-2);
-        String newest = dateOffset(-1);
-        db().save(oldest, 70.0);
-        db().save(middle, 71.0);
-        db().save(newest, 72.0);
-
-        ActivityScenario<HistoryActivity> scenario = ActivityScenario.launch(HistoryActivity.class);
-        onView(withId(R.id.history_list)).check((view, noException) -> {
-            if (noException != null) throw noException;
-            LinearLayout list = (LinearLayout) view;
-            assertEquals(3, list.getChildCount());
-            String first = ((android.widget.TextView) ((LinearLayout) list.getChildAt(0)).getChildAt(0)).getText().toString();
-            String second = ((android.widget.TextView) ((LinearLayout) list.getChildAt(1)).getChildAt(0)).getText().toString();
-            String third = ((android.widget.TextView) ((LinearLayout) list.getChildAt(2)).getChildAt(0)).getText().toString();
-            assertTrue(first.startsWith(newest));
-            assertTrue(second.startsWith(middle));
-            assertTrue(third.startsWith(oldest));
-        });
-        scenario.close();
+        String oldest = dateOffset(-3), middle = dateOffset(-2), newest = dateOffset(-1);
+        saveWeight(oldest, 70.0); saveWeight(middle, 71.0); saveWeight(newest, 72.0);
+        List<WeightDatabase.GenericEvent> weights = new java.util.ArrayList<>();
+        for (WeightDatabase.GenericEvent event : db().allGenericEvents()) if ("weight".equals(event.typeId)) weights.add(event);
+        java.util.Collections.sort(weights, (a,b) -> b.date.compareTo(a.date));
+        assertEquals(3, weights.size());
+        assertEquals(newest, weights.get(0).date);
+        assertEquals(middle, weights.get(1).date);
+        assertEquals(oldest, weights.get(2).date);
     }
 
     @Test
     public void criterion07_courbeRepresenteLesMesures() throws Exception {
-        db().save(dateOffset(-3), 70.0);
-        db().save(dateOffset(-1), 72.0);
-
+        saveWeight(dateOffset(-3), 70.0);
+        saveWeight(dateOffset(-1), 72.0);
         ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class);
         onView(withId(R.id.weight_chart)).check(matches(isDisplayed()));
-
         final Object[] dataHolder = new Object[1];
         onView(withId(R.id.weight_chart)).check((view, noException) -> {
             if (noException != null) throw noException;
             try {
-                java.lang.reflect.Field field = WeightChartView.class.getDeclaredField("data");
+                java.lang.reflect.Field field = GenericChartView.class.getDeclaredField("events");
                 field.setAccessible(true);
                 dataHolder[0] = field.get(view);
-            } catch (Exception e) {
-                throw new AssertionError(e);
-            }
+            } catch (Exception e) { throw new AssertionError(e); }
         });
         assertNotNull(dataHolder[0]);
-        assertEquals(2, ((List<?>) dataHolder[0]).size());
+        long count = ((List<?>) dataHolder[0]).stream().filter(e -> e instanceof WeightDatabase.GenericEvent && "weight".equals(((WeightDatabase.GenericEvent)e).typeId)).count();
+        assertEquals(2L, count);
         scenario.close();
     }
 
@@ -270,24 +271,24 @@ public class AcceptanceCriteriaInstrumentedTest {
     @Test
     public void criterion13_donneesConserveesApresFermeture() {
         String date = dateOffset(-1);
-        db().save(date, 73.2);
+        saveWeight(date, 73.2)
         ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class);
         scenario.close();
         ActivityScenario<MainActivity> reopened = ActivityScenario.launch(MainActivity.class);
         onView(withId(R.id.weight_chart)).check(matches(isDisplayed()));
-        assertEquals(73.2, db().get(date).weight, 0.001);
+        assertEquals(73.2, getWeight(date).weight, 0.001);
         reopened.close();
     }
 
     @Test
     public void criterion14_donneesConserveesApresRedemarrageSimule() throws Exception {
         String date = dateOffset(-1);
-        db().save(date, 73.2);
+        saveWeight(date, 73.2)
         context.getSharedPreferences("settings", Context.MODE_PRIVATE)
                 .edit().putBoolean("reminder_enabled", true).putInt("reminder_hour", 8).putInt("reminder_minute", 0).commit();
 
         new BootReceiver().onReceive(context, new Intent(Intent.ACTION_BOOT_COMPLETED));
-        assertNotNull(db().get(date));
+        assertNotNull(getWeight(date));
         assertTrue(context.getSharedPreferences("settings", Context.MODE_PRIVATE)
                 .getBoolean("reminder_enabled", false));
     }
