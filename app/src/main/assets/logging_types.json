@@ -7,8 +7,165 @@
       "icon": "💩",
       "category": "health",
       "fields": [
-        { "id": "consistency", "label": "Consistance", "type": "select", "required": true, "options": ["Dure", "Normale", "Molle", "Liquide"] },
-        { "id": "notes", "label": "Notes", "type": "text", "required": false }
+        {
+          "id": "consistency",
+          "label": "Consistance",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Dure",
+            "Normale",
+            "Molle",
+            "Liquide"
+          ]
+        },
+        {
+          "id": "notes",
+          "label": "Notes",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "headache",
+      "label": "Maux de tête",
+      "icon": "🤕",
+      "category": "health",
+      "fields": [
+        {
+          "id": "intensity",
+          "label": "Intensité (1 à 10)",
+          "type": "number",
+          "required": true
+        },
+        {
+          "id": "location",
+          "label": "Localisation",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Front",
+            "Tempes",
+            "Arrière de la tête",
+            "Un côté",
+            "Toute la tête"
+          ]
+        },
+        {
+          "id": "duration_minutes",
+          "label": "Durée (minutes)",
+          "type": "number",
+          "required": false
+        },
+        {
+          "id": "symptoms",
+          "label": "Symptômes associés",
+          "type": "text",
+          "required": false
+        },
+        {
+          "id": "notes",
+          "label": "Notes",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "stomachache",
+      "label": "Maux de ventre",
+      "icon": "🫃",
+      "category": "health",
+      "fields": [
+        {
+          "id": "intensity",
+          "label": "Intensité (1 à 10)",
+          "type": "number",
+          "required": true
+        },
+        {
+          "id": "location",
+          "label": "Localisation",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Haut du ventre",
+            "Bas du ventre",
+            "Côté droit",
+            "Côté gauche",
+            "Ventre entier"
+          ]
+        },
+        {
+          "id": "pain_type",
+          "label": "Type de douleur",
+          "type": "select",
+          "required": true,
+          "options": [
+            "Crampes",
+            "Brûlure",
+            "Pincement",
+            "Ballonnement",
+            "Autre"
+          ]
+        },
+        {
+          "id": "duration_minutes",
+          "label": "Durée (minutes)",
+          "type": "number",
+          "required": false
+        },
+        {
+          "id": "notes",
+          "label": "Notes",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "coffee",
+      "label": "Café",
+      "icon": "☕",
+      "category": "nutrition",
+      "fields": [
+        {
+          "id": "quantity",
+          "label": "Nombre de cafés",
+          "type": "number",
+          "required": true
+        },
+        {
+          "id": "size",
+          "label": "Taille",
+          "type": "select",
+          "required": false,
+          "options": [
+            "Court",
+            "Standard",
+            "Grand"
+          ]
+        },
+        {
+          "id": "type",
+          "label": "Type",
+          "type": "select",
+          "required": false,
+          "options": [
+            "Espresso",
+            "Allongé",
+            "Filtre",
+            "Décaféiné",
+            "Autre"
+          ]
+        },
+        {
+          "id": "notes",
+          "label": "Notes",
+          "type": "text",
+          "required": false
+        }
       ]
     }
   ]

@@ -75,7 +75,7 @@ public class AddMeasurementFragment extends Fragment {
     }
 
     private void showConfiguredForm(org.json.JSONObject type) {
-        LinearLayout form = new LinearLayout(getActivity()); form.setOrientation(LinearLayout.VERTICAL); form.setPadding(dp(18),dp(8),dp(18),0);
+        LinearLayout form = new LinearLayout(getActivity()); form.setOrientation(LinearLayout.VERTICAL); form.setPadding(dp(18),dp(8),dp(18),0); android.widget.ScrollView formScroll = new android.widget.ScrollView(getActivity()); formScroll.setFillViewport(true); formScroll.addView(form);
         java.util.Map<String,View> controls = new java.util.LinkedHashMap<>();
         org.json.JSONArray fields = type.optJSONArray("fields");
         if (fields != null) for (int i=0;i<fields.length();i++) {
@@ -92,7 +92,7 @@ public class AddMeasurementFragment extends Fragment {
             form.addView(control); controls.put(id,control);
         }
         Calendar selected=(Calendar)date.clone();
-        new AlertDialog.Builder(getActivity()).setTitle(type.optString("icon","")+" "+type.optString("label")).setView(form).setNegativeButton("Annuler",null).setPositiveButton("Enregistrer",(dialog,which)->{
+        new AlertDialog.Builder(getActivity()).setTitle(type.optString("icon","")+" "+type.optString("label")).setView(formScroll).setNegativeButton("Annuler",null).setPositiveButton("Enregistrer",(dialog,which)->{
             try {
                 org.json.JSONObject payload=new org.json.JSONObject();
                 if(fields!=null)for(int i=0;i<fields.length();i++){
