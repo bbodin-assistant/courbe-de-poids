@@ -5,6 +5,7 @@ public class WeightDatabase extends SQLiteOpenHelper{
  public static class GenericEvent{public final long id;public final String typeId,date,payload;public final long createdAt;public GenericEvent(long id,String typeId,String date,long createdAt,String payload){this.id=id;this.typeId=typeId;this.date=date;this.createdAt=createdAt;this.payload=payload;}}
  public WeightDatabase(Context context){super(context,DB_NAME,null,DB_VERSION);this.context=context.getApplicationContext();}
  @Override public void onCreate(SQLiteDatabase db){createGenericEventsTable(db);}
+ @Override public void onUpgrade(SQLiteDatabase db,int oldVersion,int newVersion){throw new IllegalStateException("Database migrations are disabled.");}
   private void createGenericEventsTable(SQLiteDatabase db){db.execSQL("CREATE TABLE IF NOT EXISTS "+GENERIC_TABLE+" (_id INTEGER PRIMARY KEY AUTOINCREMENT, type_id TEXT NOT NULL, date TEXT NOT NULL, created_at INTEGER NOT NULL, payload TEXT NOT NULL)");db.execSQL("CREATE INDEX IF NOT EXISTS idx_generic_events_date ON "+GENERIC_TABLE+" (date, created_at)");db.execSQL("CREATE INDEX IF NOT EXISTS idx_generic_events_type ON "+GENERIC_TABLE+" (type_id)");}
  static boolean isValidGenericEvent(String typeId,String date,long createdAt,String payload){
   if(!LoggingTypeRegistry.isValidTypeId(typeId)||date==null||!date.matches("\\d{4}-\\d{2}-\\d{2}")||createdAt<0||payload==null)return false;
