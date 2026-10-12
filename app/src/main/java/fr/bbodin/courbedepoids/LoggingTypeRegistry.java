@@ -1,4 +1,5 @@
 package fr.bbodin.courbedepoids;
+
 import android.content.Context;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -7,10 +8,66 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+
 public final class LoggingTypeRegistry {
- private final List<JSONObject> types=new ArrayList<>();
- public LoggingTypeRegistry(Context c){try(InputStream in=c.getAssets().open("logging_types.json");ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] b=new byte[4096];int n;while((n=in.read(b))!=-1)out.write(b,0,n);JSONArray a=new JSONObject(new String(out.toByteArray(),StandardCharsets.UTF_8)).optJSONArray("types");if(a!=null)for(int i=0;i<a.length();i++){JSONObject t=a.optJSONObject(i);if(t!=null&&valid(t))types.add(t);}}catch(Exception e){throw new IllegalStateException("Invalid logging_types.json",e);}}
- private boolean valid(JSONObject t){if(!t.optString("id","").matches("[a-z][a-z0-9_]{0,39}")||t.optString("label","").trim().isEmpty())return false;JSONArray a=t.optJSONArray("fields");if(a==null)return false;for(int i=0;i<a.length();i++){JSONObject f=a.optJSONObject(i);if(f==null||f.optString("id","").isEmpty()||f.optString("label","").isEmpty())return false;String k=f.optString("type","");if(!k.equals("text")&&!k.equals("number")&&!k.equals("select")&&!k.equals("boolean"))return false;if(k.equals("select")&&f.optJSONArray("options")==null)return false;}return true;}
- public List<JSONObject> getTypes(){return new ArrayList<>(types);}
- public JSONObject getType(String id){for(JSONObject t:types)if(t.optString("id").equals(id))return t;return null;}
+    private final List<JSONObject> types = new ArrayList<>();
+
+    public LoggingTypeRegistry(Context context) {
+        try (InputStream in = context.getAssets().open("logging_types.json");
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[4096];
+            int count;
+            while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+            JSONArray definitions = new JSONObject(new String(out.toByteArray(), StandardCharsets.UTF_8))
+                    .optJSONArray("types");
+            if (definitions != null) {
+                for (int i = 0; i < definitions.length(); i++) {
+                    JSONObject type = definitions.optJSONObject(i);
+                    if (type != null && isValidType(type)) types.add(type);
+                }
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Invalid logging_types.json", e);
+        }
+    }
+
+    private boolean isValidType(JSONObject type) {
+        if (!isValidTypeId(type.optString("id", ""))
+                || type.optString("label", "").trim().isEmpty()) return false;
+        JSONArray fields = type.optJSONArray("fields");
+        if (fields == null) return false;
+        for (int i = 0; i < fields.length(); i++) {
+            JSONObject field = fields.optJSONObject(i);
+            if (field == null || !isValidFieldDefinition(
+                    field.optString("id", ""),
+                    field.optString("label", ""),
+                    field.optString("type", ""),
+                    field.optJSONArray("options") != null)) return false;
+        }
+        return true;
+    }
+
+    static boolean isValidTypeId(String id) {
+        return id != null && id.matches("[a-z][a-z0-9_]{0,39}");
+    }
+
+    static boolean isSupportedFieldType(String type) {
+        return "text".equals(type) || "number".equals(type) || "select".equals(type)
+                || "boolean".equals(type);
+    }
+
+    static boolean isValidFieldDefinition(String id, String label, String type, boolean hasOptions) {
+        if (id == null || !id.matches("[a-z][a-z0-9_]{0,39}")
+                || label == null || label.trim().isEmpty() || !isSupportedFieldType(type)) return false;
+        return !"select".equals(type) || hasOptions;
+    }
+
+    public List<JSONObject> getTypes() {
+        return new ArrayList<>(types);
+    }
+
+    public JSONObject getType(String id) {
+        for (JSONObject type : types) if (type.optString("id").equals(id)) return type;
+        return null;
+    }
 }

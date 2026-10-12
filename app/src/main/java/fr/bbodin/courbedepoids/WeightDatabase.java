@@ -151,8 +151,14 @@ public class WeightDatabase extends SQLiteOpenHelper {
         public final long id; public final String typeId,date,payload; public final long createdAt;
         public GenericEvent(long id,String typeId,String date,long createdAt,String payload){this.id=id;this.typeId=typeId;this.date=date;this.createdAt=createdAt;this.payload=payload;}
     }
+    static boolean isValidGenericEvent(String typeId, String date, long createdAt, String payload) {
+        return LoggingTypeRegistry.isValidTypeId(typeId)
+                && date != null && date.matches("\\d{4}-\\d{2}-\\d{2}")
+                && createdAt >= 0 && payload != null;
+    }
+
     public long saveGenericEvent(String typeId,String date,long createdAt,String payload) {
-        if(typeId==null||!typeId.matches("[a-z][a-z0-9_]{0,39}")||date==null||!date.matches("\\d{4}-\\d{2}-\\d{2}")||createdAt<0||payload==null)throw new IllegalArgumentException("Invalid generic event");
+        if(!isValidGenericEvent(typeId,date,createdAt,payload))throw new IllegalArgumentException("Invalid generic event");
         ContentValues v=new ContentValues();v.put("type_id",typeId);v.put("date",date);v.put("created_at",createdAt);v.put("payload",payload);
         long id=getWritableDatabase().insertOrThrow("generic_events",null,v);AutoBackupScheduler.backupIfEnabled(context);return id;
     }
