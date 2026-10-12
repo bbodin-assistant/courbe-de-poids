@@ -19,10 +19,10 @@ import java.util.Locale;
 
 public class HomeFragment extends Fragment {
     private WeightDatabase db;
-    private WeightChartView chart;
-    private WaterChartView waterChart;
-    private SportChartView sportChart;
-    private WeightChartView overviewChart;
+    private GenericChartView chart;
+    private GenericChartView waterChart;
+    private GenericChartView sportChart;
+    private GenericChartView overviewChart;
     private CheckBox showWaterOverlay, showSportOverlay;
     private TextView currentWeight, weightChange, periodCaption;
     private int visibleDays = 7;
@@ -45,8 +45,8 @@ public class HomeFragment extends Fragment {
         overviewChart = view.findViewById(R.id.overview_chart);
         showWaterOverlay = view.findViewById(R.id.show_water_overlay);
         showSportOverlay = view.findViewById(R.id.show_sport_overlay);
-        showWaterOverlay.setOnCheckedChangeListener((button, checked) -> updateOverlayVisibility());
-        showSportOverlay.setOnCheckedChangeListener((button, checked) -> updateOverlayVisibility());
+        if (showWaterOverlay != null) showWaterOverlay.setVisibility(View.GONE);
+        if (showSportOverlay != null) showSportOverlay.setVisibility(View.GONE);
         currentWeight = view.findViewById(R.id.current_weight);
         weightChange = view.findViewById(R.id.weight_change);
         periodCaption = view.findViewById(R.id.weight_period_caption);
@@ -179,8 +179,7 @@ public class HomeFragment extends Fragment {
         View root = getView();
         if (root == null || db == null) return;
         List<WeightDatabase.Measurement> all = db.all();
-        List<WeightDatabase.WaterEvent> waterEvents = db.allWaterEvents();
-        List<WeightDatabase.SportEvent> sportEvents = db.allSportEvents();
+        List<WeightDatabase.GenericEvent> genericEvents = db.allGenericEvents();
         visibleDays = ChartRange.clampVisibleDays(visibleDays);
         if (!all.isEmpty()) {
             int firstDay = ChartRange.dayNumber(all.get(0).date);
@@ -196,10 +195,10 @@ public class HomeFragment extends Fragment {
         }
         endOffsetDays = ChartRange.clampEndOffsetDays(endOffsetDays);
         syncGestures();
-        waterChart.setData(waterEvents, visibleDays, endOffsetDays);
-        sportChart.setData(sportEvents, visibleDays, endOffsetDays);
-        overviewChart.setOverlayData(waterEvents, sportEvents);
-        updateOverlayVisibility();
+        chart.setData(genericEvents, "weight", "weight_kg", "last", visibleDays, endOffsetDays);
+        overviewChart.setData(genericEvents, "weight", "weight_kg", "last", visibleDays, endOffsetDays);
+        waterChart.setData(genericEvents, "water", "amount_ml", "sum", visibleDays, endOffsetDays);
+        sportChart.setData(genericEvents, "sport", "duration_minutes", "sum", visibleDays, endOffsetDays);
         updatePeriodStyles(root);
         if (all.isEmpty()) {
             maxVisibleChartDays = 7;
@@ -207,9 +206,8 @@ public class HomeFragment extends Fragment {
             currentWeight.setText("— kg");
             weightChange.setText("Aucune variation");
             weightChange.setTextColor(Color.GRAY);
-            chart.setData(all);
-            overviewChart.setOverlayData(db.allWaterEvents(), db.allSportEvents());
-            overviewChart.setData(all);
+            chart.setData(genericEvents, "weight", "weight_kg", "last", visibleDays, endOffsetDays);
+            overviewChart.setData(genericEvents, "weight", "weight_kg", "last", visibleDays, endOffsetDays);
             periodCaption.setText("Aucune mesure enregistrée");
             return;
         }
@@ -220,8 +218,6 @@ public class HomeFragment extends Fragment {
         Calendar rangeEnd = range.end;
         List<WeightDatabase.Measurement> period = new ArrayList<>();
         for (WeightDatabase.Measurement m : all) if (range.contains(m.date)) period.add(m);
-        chart.setData(all, range.start, range.end);
-        overviewChart.setData(all, range.start, range.end);
         periodCaption.setText(rangeLabel(rangeStart, rangeEnd));
         if (period.size() >= 2) {
             double delta = period.get(period.size() - 1).weight - period.get(0).weight;
@@ -233,11 +229,6 @@ public class HomeFragment extends Fragment {
             weightChange.setText("Pas assez de mesures");
             weightChange.setTextColor(Color.rgb(100, 116, 139));
         }
-    }
-
-    private void updateOverlayVisibility() {
-        if (overviewChart != null && showWaterOverlay != null && showSportOverlay != null)
-            overviewChart.setOverlayVisibility(showWaterOverlay.isChecked(), showSportOverlay.isChecked());
     }
 
     private String rangeLabel(Calendar start, Calendar end) {
