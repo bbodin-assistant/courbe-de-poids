@@ -125,7 +125,7 @@ public class SettingsActivity extends Activity {
                 line = line.trim();
                 if (line.isEmpty() || line.toLowerCase(Locale.ROOT).startsWith("type_id,")) continue;
                 String[] columns = line.split(",", -1);
-                if (columns.length != 4 || !columns[1].matches("\\\\d{4}-\\\\d{2}-\\\\d{2}")) continue;
+                if (columns.length != 4 || !columns[1].matches("\\d{4}-\\d{2}-\\d{2}")) continue;
                 try {
                     String typeId = columns[0].trim();
                     long createdAt = Long.parseLong(columns[2].trim());
