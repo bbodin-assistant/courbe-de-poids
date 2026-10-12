@@ -60,50 +60,63 @@ public class AddMeasurementFragment extends Fragment {
     private void addConfiguredTypes(View root) {
         java.util.List<org.json.JSONObject> types = new LoggingTypeRegistry(getActivity()).getTypes();
         if (types.isEmpty()) return;
-        android.widget.HorizontalScrollView scroll = new android.widget.HorizontalScrollView(getActivity());
-        scroll.setHorizontalScrollBarEnabled(false);
-        LinearLayout choices = new LinearLayout(getActivity()); choices.setOrientation(LinearLayout.HORIZONTAL);
+        java.util.Map<String, java.util.List<org.json.JSONObject>> categories = new java.util.LinkedHashMap<>();
         for (org.json.JSONObject type : types) {
-            LinearLayout item = new LinearLayout(getActivity()); item.setGravity(android.view.Gravity.CENTER);
-            item.setPadding(dp(14), 0, dp(14), 0); item.setBackgroundResource(R.drawable.bg_input); item.setClickable(true);
-            TextView label = new TextView(getActivity()); label.setText(type.optString("icon", "•") + " " + type.optString("label")); label.setTextColor(Color.rgb(20,36,58)); item.addView(label);
-            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-2, dp(50)); p.setMargins(dp(4),dp(4),dp(4),dp(4)); choices.addView(item,p);
-            item.setOnClickListener(v -> showConfiguredForm(type));
+            String category = type.optString("category", "other");
+            if (!categories.containsKey(category)) categories.put(category, new java.util.ArrayList<>());
+            categories.get(category).add(type);
         }
-        scroll.addView(choices);
-        ((ViewGroup)weightMode.getParent().getParent()).addView(scroll,2,new ViewGroup.LayoutParams(-1,-2));
+        LinearLayout sections = new LinearLayout(getActivity());
+        sections.setOrientation(LinearLayout.VERTICAL);
+        sections.setPadding(dp(12), dp(4), dp(12), dp(4));
+        for (java.util.Map.Entry<String, java.util.List<org.json.JSONObject>> category : categories.entrySet()) {
+            TextView heading = new TextView(getActivity());
+            heading.setText(categoryLabel(category.getKey()));
+            heading.setTextColor(Color.rgb(71, 85, 105));
+            heading.setTextSize(13);
+            heading.setTypeface(null, android.graphics.Typeface.BOLD);
+            heading.setPadding(dp(4), dp(8), dp(4), dp(4));
+            sections.addView(heading);
+            android.widget.HorizontalScrollView scroll = new android.widget.HorizontalScrollView(getActivity());
+            scroll.setHorizontalScrollBarEnabled(false);
+            LinearLayout choices = new LinearLayout(getActivity());
+            choices.setOrientation(LinearLayout.HORIZONTAL);
+            for (org.json.JSONObject type : category.getValue()) {
+                LinearLayout item = new LinearLayout(getActivity());
+                item.setGravity(android.view.Gravity.CENTER);
+                item.setPadding(dp(14), 0, dp(14), 0);
+                item.setBackgroundResource(R.drawable.bg_input);
+                item.setClickable(true);
+                item.setFocusable(true);
+                TextView label = new TextView(getActivity());
+                label.setText(type.optString("icon", "•") + " " + type.optString("label"));
+                label.setTextColor(Color.rgb(20, 36, 58));
+                item.addView(label);
+                LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-2, dp(50));
+                p.setMargins(dp(4), dp(4), dp(4), dp(4));
+                choices.addView(item, p);
+                item.setOnClickListener(v -> showConfiguredForm(type));
+            }
+            scroll.addView(choices);
+            sections.addView(scroll);
+        }
+        ((ViewGroup) weightMode.getParent().getParent()).addView(sections, 2, new ViewGroup.LayoutParams(-1, -2));
+    }
+
+    private String categoryLabel(String category) {
+        if ("health".equals(category)) return "Santé";
+        if ("nutrition".equals(category)) return "Nutrition";
+        if ("activity".equals(category)) return "Activité";
+        return category;
     }
 
     private void showConfiguredForm(org.json.JSONObject type) {
-        LinearLayout form = new LinearLayout(getActivity()); form.setOrientation(LinearLayout.VERTICAL); form.setPadding(dp(18),dp(8),dp(18),0); android.widget.ScrollView formScroll = new android.widget.ScrollView(getActivity()); formScroll.setFillViewport(true); formScroll.addView(form);
-        java.util.Map<String,View> controls = new java.util.LinkedHashMap<>();
-        org.json.JSONArray fields = type.optJSONArray("fields");
-        if (fields != null) for (int i=0;i<fields.length();i++) {
-            org.json.JSONObject f=fields.optJSONObject(i); if(f==null) continue;
-            String kind=f.optString("type"), id=f.optString("id");
-            TextView label=new TextView(getActivity()); label.setText(f.optString("label")); label.setTextColor(Color.rgb(20,36,58)); form.addView(label);
-            View control;
-            if(kind.equals("select")) {
-                android.widget.Spinner sp=new android.widget.Spinner(getActivity()); java.util.List<String> options=new java.util.ArrayList<>();
-                org.json.JSONArray opts=f.optJSONArray("options"); if(opts!=null)for(int j=0;j<opts.length();j++)options.add(opts.optString(j));
-                sp.setAdapter(new android.widget.ArrayAdapter<>(getActivity(),android.R.layout.simple_spinner_dropdown_item,options)); control=sp;
-            } else if(kind.equals("boolean")) { android.widget.CheckBox cb=new android.widget.CheckBox(getActivity());cb.setText(f.optString("label"));control=cb; }
-            else { EditText input=new EditText(getActivity());input.setHint(f.optString("label"));input.setSingleLine(!kind.equals("text"));input.setInputType(kind.equals("number")?android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL:android.text.InputType.TYPE_CLASS_TEXT);control=input; }
-            form.addView(control); controls.put(id,control);
-        }
+        ConfiguredLoggingForm configuredForm = new ConfiguredLoggingForm(getActivity(), type, null);
+        android.view.View formView = configuredForm.getView();
         Calendar selected=(Calendar)date.clone();
-        new AlertDialog.Builder(getActivity()).setTitle(type.optString("icon","")+" "+type.optString("label")).setView(formScroll).setNegativeButton("Annuler",null).setPositiveButton("Enregistrer",(dialog,which)->{
+        new AlertDialog.Builder(getActivity()).setTitle(type.optString("icon","")+" "+type.optString("label")).setView(formView).setNegativeButton("Annuler",null).setPositiveButton("Enregistrer",(dialog,which)->{
             try {
-                org.json.JSONObject payload=new org.json.JSONObject();
-                if(fields!=null)for(int i=0;i<fields.length();i++){
-                    org.json.JSONObject f=fields.optJSONObject(i);if(f==null)continue;String id=f.optString("id"),kind=f.optString("type");View c=controls.get(id);Object value;
-                    if(c instanceof android.widget.Spinner)value=((android.widget.Spinner)c).getSelectedItem();
-                    else if(c instanceof android.widget.CheckBox)value=((android.widget.CheckBox)c).isChecked();
-                    else value=((EditText)c).getText().toString().trim();
-                    if(f.optBoolean("required",false)&&(value==null||String.valueOf(value).trim().isEmpty()))throw new IllegalArgumentException("Champ requis : "+f.optString("label"));
-                    if(kind.equals("number")&&value!=null&&!String.valueOf(value).isEmpty())payload.put(id,Double.parseDouble(String.valueOf(value).replace(',','.')));
-                    else if(value!=null)payload.put(id,value);
-                }
+                org.json.JSONObject payload = configuredForm.readPayload();
                 new WeightDatabase(getActivity()).saveGenericEvent(type.optString("id"),new SimpleDateFormat("yyyy-MM-dd",Locale.US).format(selected.getTime()),selected.getTimeInMillis(),payload.toString());
                 Toast.makeText(getActivity(),type.optString("label")+" enregistré.",Toast.LENGTH_SHORT).show();((MainActivity)getActivity()).showTab(0);
             } catch(Exception e) { Toast.makeText(getActivity(),e.getMessage()==null?"Données invalides":e.getMessage(),Toast.LENGTH_LONG).show(); }

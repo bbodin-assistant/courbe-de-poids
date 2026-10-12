@@ -162,6 +162,19 @@ public class WeightDatabase extends SQLiteOpenHelper {
         ContentValues v=new ContentValues();v.put("type_id",typeId);v.put("date",date);v.put("created_at",createdAt);v.put("payload",payload);
         long id=getWritableDatabase().insertOrThrow("generic_events",null,v);AutoBackupScheduler.backupIfEnabled(context);return id;
     }
+    public void updateGenericEvent(long id, String typeId, String date, long createdAt, String payload) {
+        if (!isValidGenericEvent(typeId, date, createdAt, payload)) throw new IllegalArgumentException("Invalid generic event");
+        ContentValues values = new ContentValues();
+        values.put("type_id", typeId);
+        values.put("date", date);
+        values.put("created_at", createdAt);
+        values.put("payload", payload);
+        int updated = getWritableDatabase().update("generic_events", values, "_id=? AND type_id=?",
+                new String[]{String.valueOf(id), typeId});
+        if (updated == 0) throw new IllegalArgumentException("Generic event not found");
+        AutoBackupScheduler.backupIfEnabled(context);
+    }
+
     public List<GenericEvent> allGenericEvents() {
         List<GenericEvent> out=new ArrayList<>();Cursor c=getReadableDatabase().query("generic_events",new String[]{"_id","type_id","date","created_at","payload"},null,null,null,null,"date DESC, created_at DESC, _id DESC");
         try{while(c.moveToNext())out.add(new GenericEvent(c.getLong(0),c.getString(1),c.getString(2),c.getLong(3),c.getString(4)));}finally{c.close();}return out;
