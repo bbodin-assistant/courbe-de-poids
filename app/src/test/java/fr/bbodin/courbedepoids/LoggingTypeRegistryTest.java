@@ -19,6 +19,7 @@ public class LoggingTypeRegistryTest {
         assertTrue(LoggingTypeRegistry.isSupportedFieldType("number"));
         assertTrue(LoggingTypeRegistry.isSupportedFieldType("select"));
         assertTrue(LoggingTypeRegistry.isSupportedFieldType("boolean"));
+        assertTrue(LoggingTypeRegistry.isSupportedFieldType("choice_grid"));
         assertFalse(LoggingTypeRegistry.isSupportedFieldType("date"));
         assertFalse(LoggingTypeRegistry.isSupportedFieldType(null));
     }
@@ -26,7 +27,9 @@ public class LoggingTypeRegistryTest {
     @Test public void validatesFieldDefinitionsAndSelectOptionsRequirement() {
         assertTrue(LoggingTypeRegistry.isValidFieldDefinition("notes", "Notes", "text", false));
         assertTrue(LoggingTypeRegistry.isValidFieldDefinition("consistency", "Consistance", "select", true));
+        assertTrue(LoggingTypeRegistry.isValidFieldDefinition("amount_ml", "Quantité d’eau", "choice_grid", true));
         assertFalse(LoggingTypeRegistry.isValidFieldDefinition("consistency", "Consistance", "select", false));
+        assertFalse(LoggingTypeRegistry.isValidFieldDefinition("amount_ml", "Quantité d’eau", "choice_grid", false));
         assertFalse(LoggingTypeRegistry.isValidFieldDefinition("", "Notes", "text", false));
         assertFalse(LoggingTypeRegistry.isValidFieldDefinition("notes", " ", "text", false));
         assertFalse(LoggingTypeRegistry.isValidFieldDefinition("notes", "Notes", "unknown", true));

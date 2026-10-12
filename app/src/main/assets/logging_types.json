@@ -25,11 +25,37 @@
       "fields": [
         {
           "id": "amount_ml",
-          "label": "Quantité (ml)",
-          "type": "number",
+          "label": "Quantité d’eau",
+          "type": "choice_grid",
           "required": true,
-          "min": 1,
-          "max": 10000
+          "columns": 3,
+          "options": [
+            {
+              "label": "Petit verre\n150 ml",
+              "value": 150,
+              "icon": "🥛"
+            },
+            {
+              "label": "Verre\n200 ml",
+              "value": 200,
+              "icon": "🥛"
+            },
+            {
+              "label": "Grand verre\n300 ml",
+              "value": 300,
+              "icon": "🥤"
+            },
+            {
+              "label": "Gourde\n500 ml",
+              "value": 500,
+              "icon": "🧴"
+            },
+            {
+              "label": "Grande gourde\n750 ml",
+              "value": 750,
+              "icon": "🧴"
+            }
+          ]
         }
       ]
     },
@@ -42,13 +68,30 @@
         {
           "id": "activity",
           "label": "Activité",
-          "type": "select",
+          "type": "choice_grid",
           "required": true,
+          "columns": 2,
           "options": [
-            "Yoga",
-            "Course",
-            "Escalade",
-            "Workout"
+            {
+              "label": "Yoga",
+              "value": "Yoga",
+              "icon": "🧘"
+            },
+            {
+              "label": "Course",
+              "value": "Course",
+              "icon": "🏃"
+            },
+            {
+              "label": "Escalade",
+              "value": "Escalade",
+              "icon": "🧗"
+            },
+            {
+              "label": "Workout",
+              "value": "Workout",
+              "icon": "🏋️"
+            }
           ]
         },
         {
@@ -208,21 +251,55 @@
       "fields": [
         {
           "id": "quantity",
-          "label": "Nombre de cafés",
-          "type": "number",
+          "label": "Combien de cafés ?",
+          "type": "choice_grid",
           "required": true,
-          "min": 1,
-          "max": 20
+          "columns": 3,
+          "options": [
+            {
+              "label": "1 café",
+              "value": 1,
+              "icon": "☕"
+            },
+            {
+              "label": "2 cafés",
+              "value": 2,
+              "icon": "☕☕"
+            },
+            {
+              "label": "3 cafés",
+              "value": 3,
+              "icon": "☕☕☕"
+            },
+            {
+              "label": "4 cafés",
+              "value": 4,
+              "icon": "☕☕☕☕"
+            }
+          ]
         },
         {
           "id": "size",
-          "label": "Taille",
-          "type": "select",
+          "label": "Taille du café",
+          "type": "choice_grid",
           "required": false,
+          "columns": 3,
           "options": [
-            "Court",
-            "Standard",
-            "Grand"
+            {
+              "label": "Court",
+              "value": "Court",
+              "icon": "☕"
+            },
+            {
+              "label": "Standard",
+              "value": "Standard",
+              "icon": "☕"
+            },
+            {
+              "label": "Grand",
+              "value": "Grand",
+              "icon": "🥤"
+            }
           ]
         },
         {

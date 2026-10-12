@@ -1,10 +1,12 @@
 package fr.bbodin.courbedepoids;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.text.InputType;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -71,7 +73,10 @@ final class ConfiguredLoggingForm {
                 content.addView(label, lp);
 
                 View control;
-                if ("select".equals(kind)) {
+                if ("choice_grid".equals(kind)) {
+                    control = new ChoiceGrid(field.optJSONArray("options"), initial,
+                            Math.max(1, field.optInt("columns", 3)));
+                } else if ("select".equals(kind)) {
                     Spinner spinner = new Spinner(context);
                     List<String> options = new ArrayList<>();
                     options.add("Choisir…");
@@ -146,7 +151,10 @@ final class ConfiguredLoggingForm {
             View control = controls.get(id);
             Object value = null;
             boolean hasValue = false;
-            if (control instanceof Spinner) {
+            if (control instanceof ChoiceGrid) {
+                value = ((ChoiceGrid) control).getSelectedValue();
+                hasValue = value != null && value != JSONObject.NULL;
+            } else if (control instanceof Spinner) {
                 Object selected = ((Spinner) control).getSelectedItem();
                 if (selected != null && !String.valueOf(selected).trim().isEmpty()
                         && !"Choisir…".equals(String.valueOf(selected))) {
@@ -180,6 +188,101 @@ final class ConfiguredLoggingForm {
             if (hasValue) payload.put(id, value);
         }
         return payload;
+    }
+
+
+    /** Renders JSON-configured options as image-like, tappable cards. */
+    private final class ChoiceGrid extends LinearLayout {
+        private final JSONArray options;
+        private final List<LinearLayout> tiles = new ArrayList<>();
+        private final int columns;
+        private int selectedIndex = -1;
+
+        ChoiceGrid(JSONArray options, Object initial, int columns) {
+            super(context);
+            this.options = options == null ? new JSONArray() : options;
+            this.columns = Math.min(columns, Math.max(1, this.options.length()));
+            setOrientation(VERTICAL);
+            setPadding(0, dp(2), 0, dp(2));
+            for (int start = 0; start < this.options.length(); start += this.columns) {
+                LinearLayout row = new LinearLayout(context);
+                row.setOrientation(HORIZONTAL);
+                LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                rowParams.bottomMargin = dp(8);
+                addView(row, rowParams);
+                for (int index = start; index < Math.min(start + this.columns, this.options.length()); index++) {
+                    JSONObject option = this.options.optJSONObject(index);
+                    if (option == null) continue;
+                    final int optionIndex = index;
+                    LinearLayout tile = new LinearLayout(context);
+                    tile.setOrientation(VERTICAL);
+                    tile.setGravity(Gravity.CENTER);
+                    tile.setPadding(dp(4), dp(8), dp(4), dp(8));
+                    tile.setMinimumHeight(dp(90));
+                    tile.setBackground(tileBackground(false));
+                    tile.setClickable(true);
+                    tile.setFocusable(true);
+                    TextView icon = new TextView(context);
+                    icon.setText(option.optString("icon", "•"));
+                    icon.setTextSize(25);
+                    icon.setGravity(Gravity.CENTER);
+                    TextView optionLabel = new TextView(context);
+                    optionLabel.setText(option.optString("label"));
+                    optionLabel.setTextSize(12);
+                    optionLabel.setGravity(Gravity.CENTER);
+                    optionLabel.setTextColor(INK);
+                    optionLabel.setMaxLines(2);
+                    tile.addView(icon, new LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                    LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    labelParams.topMargin = dp(3);
+                    tile.addView(optionLabel, labelParams);
+                    LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, dp(90), 1f);
+                    tileParams.setMargins(dp(3), 0, dp(3), 0);
+                    row.addView(tile, tileParams);
+                    tiles.add(tile);
+                    tile.setOnClickListener(v -> {
+                        selectedIndex = optionIndex;
+                        refreshSelection();
+                    });
+                    Object optionValue = option.has("value") ? option.opt("value") : option.optString("label");
+                    if (initial != null && initial != JSONObject.NULL
+                            && String.valueOf(optionValue).equals(String.valueOf(initial))) selectedIndex = optionIndex;
+                }
+            }
+            refreshSelection();
+        }
+
+        Object getSelectedValue() {
+            if (selectedIndex < 0 || selectedIndex >= options.length()) return null;
+            JSONObject option = options.optJSONObject(selectedIndex);
+            if (option == null) return null;
+            Object value = option.opt("value");
+            return value == null || value == JSONObject.NULL ? option.optString("label") : value;
+        }
+
+        private void refreshSelection() {
+            for (int i = 0; i < tiles.size(); i++) {
+                boolean selected = i == selectedIndex;
+                tiles.get(i).setBackground(tileBackground(selected));
+                tiles.get(i).setElevation(selected ? dp(2) : 0);
+                if (tiles.get(i).getChildCount() > 1) {
+                    TextView label = (TextView) tiles.get(i).getChildAt(1);
+                    label.setTextColor(selected ? BLUE : INK);
+                    label.setTypeface(null, selected ? Typeface.BOLD : Typeface.NORMAL);
+                }
+            }
+        }
+    }
+
+    private GradientDrawable tileBackground(boolean selected) {
+        GradientDrawable shape = new GradientDrawable();
+        shape.setColor(selected ? Color.rgb(232, 243, 255) : Color.WHITE);
+        shape.setCornerRadius(dp(14));
+        shape.setStroke(dp(selected ? 2 : 1), selected ? BLUE : Color.rgb(220, 231, 245));
+        return shape;
     }
 
     private GradientDrawable roundedInput() {

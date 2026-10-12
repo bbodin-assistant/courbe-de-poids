@@ -53,13 +53,13 @@ public final class LoggingTypeRegistry {
 
     static boolean isSupportedFieldType(String type) {
         return "text".equals(type) || "number".equals(type) || "select".equals(type)
-                || "boolean".equals(type);
+                || "boolean".equals(type) || "choice_grid".equals(type);
     }
 
     static boolean isValidFieldDefinition(String id, String label, String type, boolean hasOptions) {
         if (id == null || !id.matches("[a-z][a-z0-9_]{0,39}")
                 || label == null || label.trim().isEmpty() || !isSupportedFieldType(type)) return false;
-        return !"select".equals(type) || hasOptions;
+        return !("select".equals(type) || "choice_grid".equals(type)) || hasOptions;
     }
 
     public List<JSONObject> getTypes() {
